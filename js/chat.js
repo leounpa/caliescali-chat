@@ -696,9 +696,14 @@
   var radioNombre = $("radio-nombre");
   var radioEmisoras = $("radio-emisoras");
   var radioEmisorasLista = [
-    { nombre: "FIP World", url: "https://icecast.radiofrance.fr/fipworld-midfi.mp3?id=radiofrance" },
-    { nombre: "FIP Reggae", url: "https://icecast.radiofrance.fr/fipreggae-midfi.mp3?id=radiofrance" },
-    { nombre: "FIP Rock", url: "https://icecast.radiofrance.fr/fiprock-midfi.mp3?id=radiofrance" }
+    { nombre: "Radio El Sol", url: "https://us-b4-p-e-qg12-audio.cdn.mdstrm.com/live-audio-aw/632cb6ecaa9ace684913bf19/playlist.m3u8" },
+    { nombre: "Rumba Stereo", url: "https://mdstrm.com/audio/632ce17ed1dcd7027f331209/live.m3u8" },
+    { nombre: "Olímpica Stereo", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/OLP_CALI.mp3" },
+    { nombre: "Boom FM", url: "https://streamming.dobitsoluciones.com/livestream/1" },
+    { nombre: "La X", url: "https://tupanel.info/stream/2digitalradioHDsslLIVE040" },
+    { nombre: "Oxígeno", url: "https://mdstrm.com/audio/5fab0687bcd6c2389ee9480c/live.m3u8" },
+    { nombre: "Los 40", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/%20LOS40_COLOMBIA.mp3" },
+    { nombre: "Radio Policía", url: "https://radio35.virtualtronics.com/proxy/radiopolicia964?mp=/stream" }
   ];
   radioAudio.src = radioEmisorasLista[0].url;
   function cambiarEmisora() {
