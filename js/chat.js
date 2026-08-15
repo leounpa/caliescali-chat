@@ -37,6 +37,23 @@
   var btnCerrarUsuarios = $("btn-cerrar-usuarios");
   var panelUsuarios = $("panel-usuarios");
 
+  // Moderación
+  var soyMod = false;
+
+  // Video en vivo
+  var videosPanel = $("videos-panel");
+  var videosGrid = $("videos-grid");
+  var videosCerrar = $("videos-cerrar");
+  var btnCam = $("btn-cam");
+  var btnFoto = $("btn-foto");
+  var camaraActiva = false;
+  var streamCamara = null;
+  var videoLocal = null;
+  var canvasOculto = null;
+  var intervaloVideo = null;
+  var videosRemotos = {};           // nick -> {video, img, canvas, ctx}
+  var calidadVideo = 12;            // JPEG calidad
+
   // Archivos
   var archivoInput = $("archivo-input");
   var adjuntoVista = $("adjunto-vista");
@@ -239,7 +256,17 @@
             abrirPrivado(u);
           });
           li.appendChild(candado);
-          li.addEventListener("click", function () { abrirPrivado(u); });
+          var menu = document.createElement("button");
+          menu.type = "button";
+          menu.className = "btn-menu";
+          menu.title = soyMod ? "Moderar" : "Reportar";
+          menu.textContent = soyMod ? "🛡️" : "🚩";
+          menu.addEventListener("click", function (e) {
+            e.stopPropagation();
+            preguntarMod(u);
+          });
+          li.appendChild(menu);
+          li.addEventListener("click", function () { preguntarMod(u); });
         } else {
           li.className += " yo";
         }
@@ -277,6 +304,172 @@
   function mostrarAdjunto() {
     adjuntoNombre.textContent = archivoSeleccionado.nombre;
     adjuntoVista.classList.remove("oculto");
+  }
+
+  // ===== Filtro local de ofensivas (aviso) =====
+  var OFENSIVAS_LOCAL = [
+    "hijueputa", "malparido", "marica", "perra", "puta", "pendejo",
+    "huevon", "guevon", "imbecil", "estupido", "idiota", "cabron",
+    "zorra", "mierda", "carajo", "verga", "culo", "nazi", "retrasado"
+  ];
+  function normalizarLocal(t) {
+    return t.toLowerCase()
+      .replace(/[áàäâ]/g, "a").replace(/[éèëê]/g, "e")
+      .replace(/[íìïî]/g, "i").replace(/[óòöô]/g, "o")
+      .replace(/[úùüû]/g, "u").replace(/ñ/g, "n")
+      .replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+  }
+  function tieneOfensivaLocal(texto) {
+    var limpio = " " + normalizarLocal(texto) + " ";
+    for (var i = 0; i < OFENSIVAS_LOCAL.length; i++) {
+      if (limpio.indexOf(" " + OFENSIVAS_LOCAL[i] + " ") !== -1) return true;
+    }
+    return false;
+  }
+
+  // ===== Video en vivo =====
+  function iniciarCamara() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      anadirMensaje({ tipo: "sistema", texto: "Tu navegador no permite la cámara (usa Chrome, Edge o Safari reciente)." });
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 320 }, height: { ideal: 240 } }, audio: false })
+      .then(function (stream) {
+        streamCamara = stream;
+        camaraActiva = true;
+        btnCam.textContent = "⏹";
+        btnCam.title = "Apagar cámara";
+        btnFoto.classList.remove("oculto");
+        videoLocal = document.createElement("video");
+        videoLocal.srcObject = stream;
+        videoLocal.muted = true;
+        videoLocal.playsInline = true;
+        videoLocal.play();
+        canvasOculto = document.createElement("canvas");
+        canvasOculto.width = 320;
+        canvasOculto.height = 240;
+        enviar({ t: "videoOn" });
+        anadirMensaje({ tipo: "sistema", texto: "🎥 Cámara en vivo activada." });
+        intervaloVideo = setInterval(enviarFrame, 120);
+        input.focus();
+      })
+      .catch(function (err) {
+        anadirMensaje({ tipo: "sistema", texto: "No se pudo abrir la cámara: " + err.message + ". Verifica los permisos." });
+      });
+  }
+
+  function apagarCamara() {
+    if (intervaloVideo) { clearInterval(intervaloVideo); intervaloVideo = null; }
+    if (streamCamara) {
+      streamCamara.getTracks().forEach(function (t) { t.stop(); });
+      streamCamara = null;
+    }
+    camaraActiva = false;
+    btnCam.textContent = "🎥";
+    btnCam.title = "Activar cámara en vivo";
+    btnFoto.classList.add("oculto");
+    if (videoLocal) { videoLocal.srcObject = null; videoLocal = null; }
+    enviar({ t: "videoOff" });
+    anadirMensaje({ tipo: "sistema", texto: "Cámara apagada." });
+  }
+
+  function enviarFrame() {
+    if (!camaraActiva || !videoLocal || !canvasOculto) return;
+    var ctx = canvasOculto.getContext("2d");
+    ctx.drawImage(videoLocal, 0, 0, 320, 240);
+    var datos = canvasOculto.toDataURL("image/jpeg", calidadVideo);
+    enviar({ t: "videoFrame", datos: datos });
+  }
+
+  function tomarFoto() {
+    if (!camaraActiva || !videoLocal || !canvasOculto) return;
+    var ctx = canvasOculto.getContext("2d");
+    ctx.drawImage(videoLocal, 0, 0, 320, 240);
+    var datos = canvasOculto.toDataURL("image/jpeg", 0.9);
+    var adj = { nombre: "foto-en-vivo.jpg", mime: "image/jpeg", datos: datos };
+    if (privadoCon) {
+      enviar({ t: "privArchivo", para: privadoCon, nombre: adj.nombre, mime: adj.mime, datos: adj.datos });
+    } else {
+      enviar({ t: "archivo", nombre: adj.nombre, mime: adj.mime, datos: adj.datos });
+    }
+    anadirMensaje({ tipo: "sistema", texto: "📸 Foto enviada." });
+  }
+
+  // ===== Render de videos remotos =====
+  function renderVideos() {
+    var claves = Object.keys(videosRemotos);
+    if (!claves.length) { videosPanel.classList.add("oculto"); return; }
+    videosPanel.classList.remove("oculto");
+    videosGrid.innerHTML = "";
+    claves.sort().forEach(function (nick) {
+      var v = videosRemotos[nick];
+      var wrap = document.createElement("div");
+      wrap.className = "video-remoto";
+      var et = document.createElement("span");
+      et.className = "video-remoto-nick";
+      et.textContent = "🎥 " + nick;
+      wrap.appendChild(et);
+      var img = document.createElement("img");
+      img.alt = "video de " + nick;
+      v.img = img;
+      wrap.appendChild(img);
+      videosGrid.appendChild(wrap);
+    });
+  }
+
+  function agregarVideoRemoto(nick) {
+    if (videosRemotos[nick]) return;
+    videosRemotos[nick] = { img: null };
+    renderVideos();
+    if (!document.hidden) {
+      try { new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=").play(); } catch (e) {}
+    }
+  }
+
+  function quitarVideoRemoto(nick) {
+    delete videosRemotos[nick];
+    renderVideos();
+  }
+
+  function actualizarFrameRemoto(nick, datos) {
+    var v = videosRemotos[nick];
+    if (!v || !v.img) return;
+    v.img.src = datos;
+  }
+
+  // ===== Moderación (botones por usuario) =====
+  function accionMod(u, accion, extra) {
+    var msj = { t: "mod", para: u, accion: accion };
+    if (extra) Object.keys(extra).forEach(function (k) { msj[k] = extra[k]; });
+    enviar(msj);
+  }
+
+  function preguntarMod(u) {
+    var opciones = [];
+    if (soyMod) {
+      opciones.push("🚫 Expulsar a " + u, "🔇 Silenciar (minutos)", "🚷 Banear (horas)", "🎖️ Dar permisos de moderador", "Cancelar");
+    } else {
+      opciones.push("🔒 Chat privado con " + u, "🚩 Reportar a " + u, "Cancelar");
+    }
+    var r = prompt("Acción con " + u + ":\n" + opciones.map(function (o, i) { return (i + 1) + ". " + o; }).join("\n"), "1");
+    if (!r) return;
+    var idx = parseInt(r, 10);
+    if (soyMod) {
+      if (idx === 1) accionMod(u, "kick");
+      else if (idx === 2) {
+        var mins = parseInt(prompt("Minutos de silencio:", "5"), 10);
+        if (mins) accionMod(u, "mute", { minutos: mins });
+      } else if (idx === 3) {
+        var hrs = parseInt(prompt("Horas de baneo:", "2"), 10);
+        if (hrs) accionMod(u, "ban", { horas: hrs });
+      } else if (idx === 4) accionMod(u, "mod");
+    } else {
+      if (idx === 1) abrirPrivado(u);
+      else if (idx === 2) {
+        enviar({ t: "report", para: u });
+        anadirMensaje({ tipo: "sistema", texto: "🚩 Reportaste a " + u + ". Los moderadores lo verán." });
+      }
+    }
   }
 
   // ===== Conexión =====
@@ -328,14 +521,36 @@
           usuarios = m.lista || [];
           renderUsuarios();
           break;
+        case "rol":
+          soyMod = !!m.esMod;
+          anadirMensaje({ tipo: "sistema", texto: soyMod ? "🛡️ Eres moderador del Parche. Puedes expulsar, silenciar y banear." : "Eres un usuario. Toca 🚩 para reportar contenido ofensivo." });
+          break;
+        case "videoOn":
+          agregarVideoRemoto(m.de);
+          break;
+        case "videoOff":
+          quitarVideoRemoto(m.de);
+          break;
+        case "videoFrame":
+          actualizarFrameRemoto(m.de, m.datos);
+          break;
+        case "videoLista":
+          (m.lista || []).forEach(function (n) { agregarVideoRemoto(n); });
+          break;
+        case "report":
+          if (soyMod) anadirMensaje({ tipo: "sistema", texto: "🚩 " + m.de + " reportó a " + m.para + ". Toca el usuario y elige la acción." });
+          break;
       }
     });
 
-    socket.addEventListener("close", function () {
+    socket.addEventListener("close", function (ev) {
       conectado = false;
       input.disabled = true;
       btnEnviar.disabled = true;
-      anadirMensaje({ tipo: "sistema", texto: "Se perdió la conexión. Reconectando en 3 segundos..." });
+      if (camaraActiva) apagarCamara();
+      var texto = "Se perdió la conexión. Reconectando en 3 segundos...";
+      if (ev && ev.reason) texto = ev.reason + " Reconectando en 3 segundos...";
+      anadirMensaje({ tipo: "sistema", texto: texto });
       setTimeout(conectar, 3000);
     });
 
@@ -363,6 +578,12 @@
     }
     var texto = input.value.trim();
     if (!texto) return;
+    if (!privadoCon && tieneOfensivaLocal(texto)) {
+      anadirMensaje({ tipo: "sistema", texto: "🚫 Ese mensaje contiene lenguaje ofensivo. La sala es pública: expulsión si se repite. En privado sí puedes hablar libre." });
+      input.value = "";
+      input.focus();
+      return;
+    }
     if (privadoCon) {
       enviar({ t: "priv", para: privadoCon, texto: texto });
     } else {
@@ -390,6 +611,19 @@
   privadoVolver.addEventListener("click", cerrarPrivado);
   btnUsuarios.addEventListener("click", abrirUsuariosMovil);
   btnCerrarUsuarios.addEventListener("click", cerrarUsuariosMovil);
+
+  btnCam.addEventListener("click", function () {
+    if (camaraActiva) apagarCamara();
+    else iniciarCamara();
+  });
+  btnFoto.addEventListener("click", tomarFoto);
+  videosCerrar.addEventListener("click", function () {
+    videosPanel.classList.add("oculto");
+  });
+
+  window.addEventListener("beforeunload", function () {
+    if (camaraActiva) apagarCamara();
+  });
 
   conectar();
 })();

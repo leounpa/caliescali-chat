@@ -229,6 +229,37 @@ body.en-privado .sala-cabecera { background: var(--rojo); }
 }
 .btn-adjuntar:active { transform: scale(.94); }
 
+/* ===== Cámara en vivo ===== */
+.cam-controls { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.btn-cam {
+  display: flex; align-items: center; justify-content: center;
+  width: 46px; height: 46px; border-radius: 50%;
+  background: var(--rojo); color: #fff; font-size: 20px; cursor: pointer;
+  flex: 0 0 auto;
+}
+.btn-cam-foto { background: #b45309; }
+.btn-cam:active { transform: scale(.94); }
+
+.videos-panel {
+  background: var(--tinta); color: #fff;
+  padding: 8px 16px 12px;
+  border-bottom: 2px solid var(--oro);
+}
+.videos-panel.oculto { display: none; }
+.videos-cab { display: flex; align-items: center; justify-content: space-between; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; padding-bottom: 6px; }
+.videos-cerrar { background: rgba(255,255,255,0.15); border: 0; color: #fff; border-radius: 6px; padding: 2px 10px; font-size: 14px; cursor: pointer; }
+.videos-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.video-remoto { display: flex; flex-direction: column; gap: 3px; width: 120px; }
+.video-remoto-nick { font-size: 11px; color: var(--oro); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.video-remoto img { width: 100%; border-radius: 8px; background: #000; min-height: 70px; object-fit: cover; }
+
+/* ===== Moderación ===== */
+.panel-usuarios li .btn-menu {
+  background: transparent; border: 0; cursor: pointer;
+  font-size: 14px; opacity: .75; padding: 2px 4px;
+}
+.panel-usuarios li .btn-menu:hover { opacity: 1; }
+
 .adjunto-vista {
   background: #fff; border-top: 1px solid #e0dcd2;
   display: flex; align-items: center; justify-content: space-between;
@@ -265,6 +296,9 @@ body.en-privado .sala-cabecera { background: var(--rojo); }
   .privado-barra { padding: 8px 10px; }
   .form-mensaje { gap: 8px; padding-top: 6px; padding-bottom: 6px; }
   .btn-adjuntar { width: 42px; height: 42px; }
+  .btn-cam { width: 42px; height: 42px; }
+  .cam-controls { gap: 6px; }
+  .video-remoto { width: 96px; }
   #mensaje-input { font-size: 16px; padding: 12px 14px; }
   #btn-enviar { padding: 0 16px; font-size: 14px; }
   .mensaje .archivo-sel { max-width: 200px; }

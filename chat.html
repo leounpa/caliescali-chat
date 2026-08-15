@@ -34,6 +34,14 @@
   <span class="privado-bloqueo" id="privado-bloqueo" title="Chat privado">🔒</span>
 </div>
 
+<div class="videos-panel oculto" id="videos-panel">
+  <div class="videos-cab">
+    <span>🎥 En vivo</span>
+    <button type="button" class="videos-cerrar" id="videos-cerrar" title="Ocultar videos">✕</button>
+  </div>
+  <div class="videos-grid" id="videos-grid"></div>
+</div>
+
 <div class="contenedor sala-cuerpo">
   <section class="panel-mensajes" id="mensajes">
     <div class="mensaje sistema">Conectando al Parche de Cali...</div>
@@ -50,9 +58,13 @@
 
 <div class="sala-pie">
   <form id="form-mensaje" class="contenedor form-mensaje">
-    <div class="adjuntar-wrap">
-      <label class="btn-adjuntar" id="btn-adjuntar" title="Enviar foto o video" for="archivo-input">📷</label>
-      <input type="file" id="archivo-input" accept="image/*,video/*" hidden>
+    <div class="cam-controls">
+      <label class="btn-cam" id="btn-cam" title="Activar cámara en vivo">🎥</label>
+      <label class="btn-cam btn-cam-foto oculto" id="btn-foto" title="Tomar foto en vivo">📸</label>
+      <div class="adjuntar-wrap">
+        <label class="btn-adjuntar" id="btn-adjuntar" title="Enviar foto o video (galería)" for="archivo-input">📷</label>
+        <input type="file" id="archivo-input" accept="image/*,video/*" hidden>
+      </div>
     </div>
     <input type="text" id="mensaje-input" maxlength="500" placeholder="Escribe tu mensaje, parce..." autocomplete="off" disabled>
     <button type="submit" id="btn-enviar" disabled>Enviar</button>
