@@ -7,6 +7,10 @@
   var SALA = (PARAMS.get("sala") || localStorage.getItem("parcheSala") || "cali").trim();
   var MI_AVATAR = (PARAMS.get("avatar") || localStorage.getItem("parcheAvatar") || "🙂").slice(0, 8);
   var MI_COLOR = /^#[0-9a-f]{6}$/i.test(localStorage.getItem("parcheColor") || "") ? localStorage.getItem("parcheColor") : "#007a4d";
+  var SALAS_TITULO = {
+    cali: "#Cali · Principal", salsa: "#Salsa", rumba: "#Rumba",
+    colombia: "#Colombia", general: "#General", amistad: "#Amistad"
+  };
 
   var servidor = (function () {
     var config = (window.PARCHE_CONFIG || {});
@@ -79,8 +83,8 @@
   var detalles = {};                // nick -> {avatar, color, esMod}
 
   if (!NICK) { location.href = "index.html"; return; }
-  $("sala-titulo").textContent = "#" + SALA;
-  document.title = "#" + SALA + " · El Parche de Cali";
+  $("sala-titulo").textContent = SALAS_TITULO[SALA] || ("#" + SALA);
+  document.title = (SALAS_TITULO[SALA] || ("#" + SALA)) + " · El Parche de Cali";
 
   function esc(t) {
     return t.replace(/[&<>"']/g, function (c) {
@@ -685,6 +689,39 @@
   btnEmoji.addEventListener("click", function () {
     emojiPanel.classList.toggle("oculto");
   });
+
+  // ===== Radio =====
+  var radioAudio = $("radio-audio");
+  var radioPlay = $("radio-play");
+  var radioNombre = $("radio-nombre");
+  var radioEmisoras = $("radio-emisoras");
+  var radioEmisorasLista = [
+    { nombre: "FIP World", url: "https://icecast.radiofrance.fr/fipworld-midfi.mp3?id=radiofrance" },
+    { nombre: "FIP Reggae", url: "https://icecast.radiofrance.fr/fipreggae-midfi.mp3?id=radiofrance" },
+    { nombre: "FIP Rock", url: "https://icecast.radiofrance.fr/fiprock-midfi.mp3?id=radiofrance" }
+  ];
+  radioAudio.src = radioEmisorasLista[0].url;
+  function cambiarEmisora() {
+    var emi = radioEmisorasLista[parseInt(radioEmisoras.value, 10) || 0];
+    radioNombre.textContent = emi.nombre;
+    radioAudio.src = emi.url;
+    radioAudio.load();
+    radioAudio.play().catch(function () {
+      anadirMensaje({ tipo: "sistema", texto: "📻 No se pudo reproducir " + emi.nombre + ". Prueba otra emisora." });
+    });
+  }
+  radioPlay.addEventListener("click", function () {
+    if (radioAudio.paused) {
+      radioAudio.play().catch(function () {
+        anadirMensaje({ tipo: "sistema", texto: "📻 No se pudo reproducir la radio. Prueba otra emisora." });
+      });
+    } else {
+      radioAudio.pause();
+    }
+  });
+  radioEmisoras.addEventListener("change", cambiarEmisora);
+  radioAudio.addEventListener("play", function () { radioPlay.textContent = "⏸"; });
+  radioAudio.addEventListener("pause", function () { radioPlay.textContent = "▶"; });
 
   // ===== Videollamada (Jitsi) =====
   function cerrarLlamada() {

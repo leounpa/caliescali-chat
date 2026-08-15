@@ -88,6 +88,12 @@ body {
 .btn-chatear:hover { transform: translateY(-1px); box-shadow: 0 6px 0 #a01a20; }
 .btn-chatear:active { transform: translateY(2px); box-shadow: 0 2px 0 #a01a20; }
 .aviso { color: #888; font-size: 13px; margin: 14px 0 0; }
+.entrada-opciones { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.opcion-check, .opcion-terminos { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--tinta); cursor: pointer; }
+.opcion-check input, .opcion-terminos input { width: 17px; height: 17px; accent-color: var(--verde); cursor: pointer; }
+.opcion-terminos { font-size: 13px; color: var(--gris); }
+.opcion-terminos a { color: var(--verde); font-weight: 600; }
+.opcion-terminos input { accent-color: var(--rojo); }
 
 .puntos {
   list-style: none; display: flex; flex-wrap: wrap; gap: 10px;
@@ -100,13 +106,38 @@ body {
 
 /* ===== Normas ===== */
 .normas { background: var(--tarjeta); border-radius: 14px; box-shadow: var(--sombra); padding: 24px; margin: 20px 0 40px; }
-.normas h2 { font-family: 'Bebas Neue', sans-serif; font-size: 26px; margin: 0 0 8px; }
-.normas p { color: var(--gris); font-size: 14px; line-height: 1.6; margin: 0; }
+.normas h1 { font-family: 'Bebas Neue', sans-serif; font-size: 30px; margin: 0 0 10px; }
+.normas h2 { font-family: 'Bebas Neue', sans-serif; font-size: 26px; margin: 20px 0 8px; }
+.normas p { color: var(--gris); font-size: 14px; line-height: 1.6; margin: 0 0 10px; }
+.lista-terminos { margin: 0 0 16px; padding-left: 20px; }
+.lista-terminos li { color: var(--gris); font-size: 14px; line-height: 1.7; margin-bottom: 6px; }
 
 /* ===== Pie ===== */
 .pie { background: var(--tinta); color: #bbb; text-align: center; padding: 16px 0; font-size: 13px; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+/* ===== Radio ===== */
+.radio-barra {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--oro); color: var(--tinta);
+  padding: 6px 16px; font-size: 13px; font-weight: 600;
+}
+.radio-play {
+  border: 0; background: var(--tinta); color: var(--oro);
+  border-radius: 50%; width: 30px; height: 30px;
+  font-size: 14px; cursor: pointer; flex-shrink: 0;
+}
+.radio-nombre { white-space: nowrap; }
+.radio-emisoras {
+  flex: 1; min-width: 0; border: 0; background: rgba(0,0,0,0.08);
+  color: var(--tinta); border-radius: 6px; padding: 5px 8px;
+  font-size: 13px; font-weight: 600; max-width: 340px;
+}
+body.en-privado .radio-barra { background: var(--rojo); color: #fff; }
+body.en-privado .radio-play { background: #fff; color: var(--rojo); }
+body.en-privado .radio-emisoras { background: rgba(255,255,255,0.25); color: #fff; }
+body.en-privado .radio-emisoras option { color: var(--tinta); }
 
 /* ===== Sala de chat ===== */
 body.sala { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; background: #e9e5dc; }

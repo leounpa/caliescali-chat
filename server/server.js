@@ -24,7 +24,7 @@ const TIPOS = {
 };
 
 // Salas disponibles
-const SALAS = { cali: "#Cali", salsa: "#Salsa", rumba: "#Rumba", colombia: "#Colombia" };
+const SALAS = { cali: "#Cali", salsa: "#Salsa", rumba: "#Rumba", colombia: "#Colombia", general: "#General", amistad: "#Amistad" };
 
 // Estado: sala -> Set de clientes
 const salas = {};
@@ -188,7 +188,8 @@ function salaValida(nombre) { return Object.prototype.hasOwnProperty.call(SALAS,
 function apodoValido(nick) {
   if (!nick) return false;
   const n = nick.trim();
-  return n.length >= 2 && n.length <= MAX_NICK && !/[<>"']/.test(n);
+  // Como DaleChat: letras, números, guion bajo y guion medio (más acentos/ñ)
+  return n.length >= 2 && n.length <= MAX_NICK && /^[A-Za-z0-9_\-.áéíóúüñÁÉÍÓÚÜÑ]+$/.test(n);
 }
 
 function archivoValido(m) {

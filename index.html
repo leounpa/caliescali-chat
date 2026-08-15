@@ -53,6 +53,16 @@
             <option value="salsa">#Salsa</option>
             <option value="rumba">#Rumba</option>
             <option value="colombia">#Colombia</option>
+            <option value="general">#General</option>
+            <option value="amistad">#Amistad</option>
+          </select>
+        </div>
+        <div class="entrada-sala">
+          <span class="icono-sala">👤</span>
+          <select id="genero" name="genero">
+            <option value="No especificar" selected>Soy: No especificar</option>
+            <option value="Hombre">Soy: Hombre</option>
+            <option value="Mujer">Soy: Mujer</option>
           </select>
         </div>
         <div class="entrada-perfil">
@@ -85,6 +95,16 @@
             <input type="color" id="nick-color" name="nickcolor" value="#007a4d">
           </label>
         </div>
+        <div class="entrada-opciones">
+          <label class="opcion-check">
+            <input type="checkbox" id="remember" checked>
+            <span>Recordarme</span>
+          </label>
+        </div>
+        <label class="opcion-terminos">
+          <input type="checkbox" id="tnc" checked>
+          <span>Acepto los <a href="terminos.html" target="_blank">términos</a> y <a href="terminos.html#privacidad" target="_blank">políticas de privacidad</a></span>
+        </label>
         <button type="submit" class="btn-chatear">💬 CHATEAR</button>
       </form>
       <p class="aviso">Sin registro · Gratis · Anónimo · En tu navegador</p>
@@ -122,23 +142,61 @@
   if (avatar) { document.getElementById("avatar").value = avatar; }
   var color = localStorage.getItem("parcheColor");
   if (color) { document.getElementById("nick-color").value = color; }
+  var genero = localStorage.getItem("parcheGenero");
+  if (genero) { document.getElementById("genero").value = genero; }
   var avatarSel = document.getElementById("avatar");
   var avatarEmoji = document.getElementById("avatar-emoji");
+  var generoSel = document.getElementById("genero");
+  var avataresGenero = {
+    "Hombre": ["🕺", "👨", "😎", "💪", "🤙", "🕶️"],
+    "Mujer": ["💃", "👩", "👩‍🎤", "🥰", "🌺", "💅"],
+    "No especificar": ["🙂", "😀", "🥳", "🤠", "🦄"]
+  };
+  var selAvatar = null;
+  function aplicarAvatar() {
+    var lista = avataresGenero[generoSel.value];
+    for (var i = 0; i < lista.length; i++) {
+      if (lista[i] === avatarSel.value) { selAvatar = lista[i]; break; }
+    }
+    if (!selAvatar) { selAvatar = lista[0]; }
+    avatarSel.value = selAvatar;
+    avatarEmoji.textContent = selAvatar;
+  }
   avatarEmoji.textContent = avatarSel.value;
+  generoSel.addEventListener("change", aplicarAvatar);
   avatarSel.addEventListener("change", function () {
     avatarEmoji.textContent = avatarSel.value;
+    selAvatar = avatarSel.value;
   });
 
   document.getElementById("form-entrada").addEventListener("submit", function (e) {
     e.preventDefault();
     var n = document.getElementById("nick").value.trim().slice(0, 24);
     if (!n) { alert("Pon tu apodo, parce."); return; }
+    if (!/^[A-Za-z0-9_.\-áéíóúüñÁÉÍÓÚÜÑ]+$/.test(n)) {
+      alert("El apodo solo puede tener letras, números, guion bajo (_) y guion medio (-).");
+      return;
+    }
+    if (!document.getElementById("tnc").checked) {
+      alert("Debes aceptar los términos y las políticas de privacidad para entrar.");
+      return;
+    }
     var s = document.getElementById("sala").value;
-    localStorage.setItem("parcheNick", n);
-    localStorage.setItem("parcheSala", s);
-    localStorage.setItem("parcheAvatar", avatarSel.value);
-    localStorage.setItem("parcheColor", document.getElementById("nick-color").value);
-    location.href = "chat.html?nick=" + encodeURIComponent(n) + "&sala=" + encodeURIComponent(s);
+    var g = generoSel.value;
+    if (document.getElementById("remember").checked) {
+      localStorage.setItem("parcheNick", n);
+      localStorage.setItem("parcheSala", s);
+      localStorage.setItem("parcheAvatar", avatarSel.value);
+      localStorage.setItem("parcheColor", document.getElementById("nick-color").value);
+      localStorage.setItem("parcheGenero", g);
+    } else {
+      localStorage.removeItem("parcheNick");
+      localStorage.removeItem("parcheSala");
+      localStorage.removeItem("parcheAvatar");
+      localStorage.removeItem("parcheColor");
+      localStorage.removeItem("parcheGenero");
+    }
+    location.href = "chat.html?nick=" + encodeURIComponent(n) + "&sala=" + encodeURIComponent(s) + "&genero=" + encodeURIComponent(g);
   });
 })();
 </script>

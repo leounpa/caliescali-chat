@@ -27,6 +27,19 @@
   </div>
 </div>
 
+<!-- Barra de radio -->
+<div class="radio-barra">
+  <button type="button" class="radio-play" id="radio-play" title="Reproducir / pausar">▶</button>
+  <span class="radio-ico" id="radio-ico">📻</span>
+  <span class="radio-nombre" id="radio-nombre">FIP World</span>
+  <select class="radio-emisoras" id="radio-emisoras" title="Cambiar emisora">
+    <option value="0" selected>FIP World · salsa y música del mundo</option>
+    <option value="1">FIP Reggae</option>
+    <option value="2">FIP Rock</option>
+  </select>
+  <audio id="radio-audio" preload="none"></audio>
+</div>
+
 <!-- Barra del chat privado -->
 <div class="privado-barra oculto" id="privado-barra">
   <button type="button" class="privado-volver" id="privado-volver" title="Volver a la sala">←</button>
