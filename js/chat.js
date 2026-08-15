@@ -5,6 +5,8 @@
   var PARAMS = new URLSearchParams(location.search);
   var NICK = (PARAMS.get("nick") || localStorage.getItem("parcheNick") || "").trim().slice(0, 24);
   var SALA = (PARAMS.get("sala") || localStorage.getItem("parcheSala") || "cali").trim();
+  var MI_AVATAR = (PARAMS.get("avatar") || localStorage.getItem("parcheAvatar") || "🙂").slice(0, 8);
+  var MI_COLOR = /^#[0-9a-f]{6}$/i.test(localStorage.getItem("parcheColor") || "") ? localStorage.getItem("parcheColor") : "#007a4d";
 
   var servidor = (function () {
     var config = (window.PARCHE_CONFIG || {});
@@ -61,6 +63,21 @@
   var adjuntoQuitar = $("adjunto-quitar");
   var archivoSeleccionado = null;   // {nombre, mime, datos(base64)}
 
+  // Emoji picker
+  var btnEmoji = $("btn-emoji");
+  var emojiPanel = $("emoji-panel");
+
+  // Videollamada
+  var btnVideollamada = $("btn-videollamada");
+  var videoLlamadaPanel = $("videollamada-panel");
+  var videoLlamadaMarco = $("videollamada-marco");
+  var videoLlamadaCon = $("videollamada-con");
+  var videoLlamadaCerrar = $("videollamada-cerrar");
+  var llamadaAbierta = false;
+
+  // Detalles de usuarios (avatar, color)
+  var detalles = {};                // nick -> {avatar, color, esMod}
+
   if (!NICK) { location.href = "index.html"; return; }
   $("sala-titulo").textContent = "#" + SALA;
   document.title = "#" + SALA + " · El Parche de Cali";
@@ -72,10 +89,16 @@
   }
 
   function colorDe(nick) {
+    if (detalles[nick] && detalles[nick].color) return detalles[nick].color;
     if (!mapaColor[nick]) {
       mapaColor[nick] = colores[Object.keys(mapaColor).length % colores.length];
     }
     return mapaColor[nick];
+  }
+
+  function avatarDe(nick) {
+    if (detalles[nick] && detalles[nick].avatar) return detalles[nick].avatar;
+    return "🙂";
   }
 
   function hora() {
@@ -102,7 +125,11 @@
 
       var n = document.createElement("span");
       n.className = "nick";
-      n.textContent = msg.nick;
+      var av = document.createElement("span");
+      av.className = "avatar-mini";
+      av.textContent = avatarDe(msg.nick);
+      n.appendChild(av);
+      n.appendChild(document.createTextNode(msg.nick));
       n.style.color = colorDe(msg.nick);
       div.appendChild(n);
 
@@ -205,6 +232,8 @@
       propio: !!msg.propio, privado: true,
       nombre: msg.nombre || "", mime: msg.mime || "", datos: msg.datos || ""
     };
+    if (msg.avatar) { if (!detalles[nick]) detalles[nick] = {}; detalles[nick].avatar = msg.avatar; }
+    if (msg.color) { if (!detalles[nick]) detalles[nick] = {}; detalles[nick].color = msg.color; }
     privados[clave].msgs.push(obj);
     if (privadoCon === clave) {
       anadirMensaje(obj);
@@ -240,11 +269,19 @@
       usuarios.slice().sort(function (a, b) { return a.localeCompare(b); }).forEach(function (u) {
         var li = document.createElement("li");
         li.setAttribute("data-nick", u);
+        var av = document.createElement("span");
+        av.className = "avatar-lista";
+        av.textContent = avatarDe(u);
+        li.appendChild(av);
         var dot = document.createElement("span");
         dot.className = "dot";
         dot.style.color = colorDe(u);
         li.appendChild(dot);
-        li.appendChild(document.createTextNode(u));
+        var nombre = document.createElement("span");
+        nombre.className = "usuario-nombre";
+        nombre.textContent = u;
+        nombre.style.color = colorDe(u);
+        li.appendChild(nombre);
         if (u !== NICK) {
           var candado = document.createElement("button");
           candado.type = "button";
@@ -486,7 +523,7 @@
       input.disabled = false;
       btnEnviar.disabled = false;
       input.focus();
-      enviar({ t: "join", nick: NICK, sala: SALA });
+      enviar({ t: "join", nick: NICK, sala: SALA, avatar: MI_AVATAR, color: MI_COLOR });
     });
 
     socket.addEventListener("message", function (ev) {
@@ -519,6 +556,10 @@
           break;
         case "users":
           usuarios = m.lista || [];
+          if (m.detalles) {
+            detalles = {};
+            m.detalles.forEach(function (d) { detalles[d.nick] = d; });
+          }
           renderUsuarios();
           break;
         case "rol":
@@ -624,6 +665,50 @@
   window.addEventListener("beforeunload", function () {
     if (camaraActiva) apagarCamara();
   });
+
+  // ===== Emoji picker =====
+  var EMOJIS = ["😀","😁","😂","🤣","😊","😍","😘","😎","🤩","🥳","😢","😭","😡","🤔","😴","🤗","🙃","😜","🤙","👍","👎","👏","🙏","💪","🔥","❤️","💔","💯","🎶","💃","🕺","🌴","🍺","🍹","🥂","🎉","🎊","⭐","✨","🚀","😅","😇","🥰","😋","🤤","😈","👀","🫶","🙌","🤝","✌️","🤞","🖕","👋","💋","🐶","🐱","🦄","🐯","🌶️","🍕","🌮","⚽","🏆","🎁","🔒","💬","🤷"];
+  var emojisDispersos = [];
+  EMOJIS.forEach(function (e) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "emoji-item";
+    b.textContent = e;
+    b.addEventListener("click", function () {
+      input.value += e;
+      input.focus();
+      emojiPanel.classList.add("oculto");
+    });
+    emojisDispersos.push(b);
+    emojiPanel.appendChild(b);
+  });
+  btnEmoji.addEventListener("click", function () {
+    emojiPanel.classList.toggle("oculto");
+  });
+
+  // ===== Videollamada (Jitsi) =====
+  function cerrarLlamada() {
+    llamadaAbierta = false;
+    videoLlamadaMarco.innerHTML = "";
+    videoLlamadaPanel.classList.add("oculto");
+  }
+  btnVideollamada.addEventListener("click", function () {
+    if (!privadoCon) return;
+    if (llamadaAbierta) { cerrarLlamada(); return; }
+    var sala = "parche-cali-" + NICK.replace(/[^a-zA-Z0-9]/g, "") + "-" + privadoCon.replace(/[^a-zA-Z0-9]/g, "");
+    videoLlamadaCon.textContent = privadoCon;
+    videoLlamadaPanel.classList.remove("oculto");
+    llamadaAbierta = true;
+    videoLlamadaMarco.innerHTML = "";
+    var iframe = document.createElement("iframe");
+    iframe.src = "https://meet.jit.si/" + sala + "#userInfo.displayName=\"" + encodeURIComponent(NICK) + "\"";
+    iframe.allow = "camera; microphone; fullscreen; display-capture";
+    iframe.className = "videollamada-iframe";
+    videoLlamadaMarco.appendChild(iframe);
+    anadirMensaje({ tipo: "sistema", texto: "📹 Invitaste a " + privadoCon + " a una videollamada. Comparte esta sala para que entren los dos." });
+  });
+  videoLlamadaCerrar.addEventListener("click", cerrarLlamada);
+  privadoVolver.addEventListener("click", function () { if (llamadaAbierta) cerrarLlamada(); cerrarPrivado(); });
 
   conectar();
 })();

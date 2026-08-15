@@ -31,7 +31,16 @@
 <div class="privado-barra oculto" id="privado-barra">
   <button type="button" class="privado-volver" id="privado-volver" title="Volver a la sala">←</button>
   <span class="privado-titulo" id="privado-titulo"></span>
+  <button type="button" class="privado-videollamada" id="btn-videollamada" title="Videollamada">📹</button>
   <span class="privado-bloqueo" id="privado-bloqueo" title="Chat privado">🔒</span>
+</div>
+
+<div class="videollamada-panel oculto" id="videollamada-panel">
+  <div class="videollamada-cab">
+    <span>📹 Videollamada con <b id="videollamada-con"></b></span>
+    <button type="button" class="videollamada-cerrar" id="videollamada-cerrar" title="Cerrar">✕</button>
+  </div>
+  <div class="videollamada-marco" id="videollamada-marco"></div>
 </div>
 
 <div class="videos-panel oculto" id="videos-panel">
@@ -65,10 +74,12 @@
         <label class="btn-adjuntar" id="btn-adjuntar" title="Enviar foto o video (galería)" for="archivo-input">📷</label>
         <input type="file" id="archivo-input" accept="image/*,video/*" hidden>
       </div>
+      <button type="button" class="btn-emoji" id="btn-emoji" title="Emojis">😊</button>
     </div>
     <input type="text" id="mensaje-input" maxlength="500" placeholder="Escribe tu mensaje, parce..." autocomplete="off" disabled>
     <button type="submit" id="btn-enviar" disabled>Enviar</button>
   </form>
+  <div class="emoji-panel oculto" id="emoji-panel"></div>
   <div class="adjunto-vista oculto" id="adjunto-vista">
     <span class="adjunto-nombre" id="adjunto-nombre"></span>
     <button type="button" class="adjunto-quitar" id="adjunto-quitar" title="Quitar">✕</button>

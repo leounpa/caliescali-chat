@@ -55,6 +55,36 @@
             <option value="colombia">#Colombia</option>
           </select>
         </div>
+        <div class="entrada-perfil">
+          <label class="perfil-avatar" title="Elige tu avatar">
+            <span id="avatar-emoji" class="avatar-preview">🙂</span>
+            <select id="avatar" name="avatar" class="sr-only">
+              <option selected>🙂</option>
+              <option>😀</option>
+              <option>😎</option>
+              <option>🕺</option>
+              <option>💃</option>
+              <option>🤠</option>
+              <option>🥳</option>
+              <option>😎</option>
+              <option>👨‍🎤</option>
+              <option>👩‍🎤</option>
+              <option>💪</option>
+              <option>🦄</option>
+              <option>🐯</option>
+              <option>🔥</option>
+              <option>🌴</option>
+              <option>🎶</option>
+              <option>🕶️</option>
+              <option>🥂</option>
+              <option>💘</option>
+              <option>🤙</option>
+            </select>
+          </label>
+          <label class="perfil-color" title="Elige el color de tu nombre">
+            <input type="color" id="nick-color" name="nickcolor" value="#007a4d">
+          </label>
+        </div>
         <button type="submit" class="btn-chatear">💬 CHATEAR</button>
       </form>
       <p class="aviso">Sin registro · Gratis · Anónimo · En tu navegador</p>
@@ -88,6 +118,16 @@
   if (nick) { document.getElementById("nick").value = nick; }
   var sala = localStorage.getItem("parcheSala");
   if (sala) { document.getElementById("sala").value = sala; }
+  var avatar = localStorage.getItem("parcheAvatar");
+  if (avatar) { document.getElementById("avatar").value = avatar; }
+  var color = localStorage.getItem("parcheColor");
+  if (color) { document.getElementById("nick-color").value = color; }
+  var avatarSel = document.getElementById("avatar");
+  var avatarEmoji = document.getElementById("avatar-emoji");
+  avatarEmoji.textContent = avatarSel.value;
+  avatarSel.addEventListener("change", function () {
+    avatarEmoji.textContent = avatarSel.value;
+  });
 
   document.getElementById("form-entrada").addEventListener("submit", function (e) {
     e.preventDefault();
@@ -96,6 +136,8 @@
     var s = document.getElementById("sala").value;
     localStorage.setItem("parcheNick", n);
     localStorage.setItem("parcheSala", s);
+    localStorage.setItem("parcheAvatar", avatarSel.value);
+    localStorage.setItem("parcheColor", document.getElementById("nick-color").value);
     location.href = "chat.html?nick=" + encodeURIComponent(n) + "&sala=" + encodeURIComponent(s);
   });
 })();

@@ -108,6 +108,21 @@ function usuariosDe(sala) {
   return lista;
 }
 
+function infoDe(ws) {
+  return {
+    nick: ws.nick,
+    avatar: ws.avatar || "🙂",
+    color: ws.color || "#1a1a2e",
+    esMod: esMod(ws.nick)
+  };
+}
+
+function detallesDe(sala) {
+  const lista = [];
+  salas[sala].forEach(c => { if (c.nick) lista.push(infoDe(c)); });
+  return lista;
+}
+
 function difundir(sala, obj) {
   const datos = mensaje(obj);
   salas[sala].forEach(c => {
@@ -116,7 +131,7 @@ function difundir(sala, obj) {
 }
 
 function notificarUsuarios(sala) {
-  difundir(sala, { t: "users", lista: usuariosDe(sala) });
+  difundir(sala, { t: "users", lista: usuariosDe(sala), detalles: detallesDe(sala) });
 }
 
 function enviarA(nick, obj) {
@@ -207,6 +222,8 @@ wss.on("connection", (ws) => {
       }
       ws.nick = nick;
       ws.sala = m.sala;
+      ws.avatar = (typeof m.avatar === "string" && m.avatar.trim()) ? m.avatar.trim().slice(0, 8) : "🙂";
+      ws.color = /^#[0-9a-f]{6}$/i.test(m.color || "") ? m.color : "#1a1a2e";
 
       let repetido = false;
       salas[ws.sala].forEach(c => { if (c !== ws && c.nick === ws.nick) repetido = true; });
@@ -255,7 +272,7 @@ wss.on("connection", (ws) => {
         setTimeout(() => { ws.close(4001, "ofensiva"); }, 400);
         return;
       }
-      difundir(ws.sala, { t: "msg", nick: ws.nick, texto: texto });
+      difundir(ws.sala, { t: "msg", nick: ws.nick, avatar: ws.avatar, color: ws.color, texto: texto });
     }
 
     else if (m.t === "archivo" && ws.sala && ws.nick) {
@@ -267,7 +284,7 @@ wss.on("connection", (ws) => {
         ws.send(mensaje({ t: "sys", texto: "Archivo demasiado grande o inválido (máx. 6 MB)." }));
         return;
       }
-      difundir(ws.sala, { t: "archivo", de: ws.nick, nombre: m.nombre, mime: m.mime, datos: m.datos });
+      difundir(ws.sala, { t: "archivo", de: ws.nick, avatar: ws.avatar, color: ws.color, nombre: m.nombre, mime: m.mime, datos: m.datos });
     }
 
     else if (m.t === "priv" && ws.sala && ws.nick) {
@@ -279,8 +296,8 @@ wss.on("connection", (ws) => {
         ws.send(mensaje({ t: "sys", texto: "🙁 " + para + " no está conectado(a) en este momento." }));
         return;
       }
-      enviarA(para, { t: "priv", de: ws.nick, texto: texto });
-      ws.send(mensaje({ t: "priv", de: ws.nick, texto: texto, propio: true }));
+      enviarA(para, { t: "priv", de: ws.nick, avatar: ws.avatar, color: ws.color, texto: texto });
+      ws.send(mensaje({ t: "priv", de: ws.nick, avatar: ws.avatar, color: ws.color, texto: texto, propio: true }));
     }
 
     else if (m.t === "privArchivo" && ws.sala && ws.nick) {
@@ -295,8 +312,8 @@ wss.on("connection", (ws) => {
         ws.send(mensaje({ t: "sys", texto: "🙁 " + para + " no está conectado(a) en este momento." }));
         return;
       }
-      enviarA(para, { t: "privArchivo", de: ws.nick, nombre: m.nombre, mime: m.mime, datos: m.datos });
-      ws.send(mensaje({ t: "privArchivo", de: ws.nick, nombre: m.nombre, mime: m.mime, datos: m.datos, propio: true }));
+      enviarA(para, { t: "privArchivo", de: ws.nick, avatar: ws.avatar, color: ws.color, nombre: m.nombre, mime: m.mime, datos: m.datos });
+      ws.send(mensaje({ t: "privArchivo", de: ws.nick, avatar: ws.avatar, color: ws.color, nombre: m.nombre, mime: m.mime, datos: m.datos, propio: true }));
     }
 
     // ===== Video en vivo =====
