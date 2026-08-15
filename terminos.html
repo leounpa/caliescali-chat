@@ -12,8 +12,8 @@
   <span></span><span></span><span></span>
 </div>
 
-<header class="cabecera">
-  <div class="contenedor">
+<nav class="navbar-parche" role="navigation" aria-label="Menú principal">
+  <div class="navbar-parche-brand">
     <a href="index.html" class="marca">
       <span class="marca-ico">💃</span>
       <span class="marca-txt">
@@ -21,12 +21,16 @@
         <small>la sucursal del cielo en línea</small>
       </span>
     </a>
-    <nav class="nav">
-      <a href="index.html">Inicio</a>
-      <a href="chat.html">Chatear</a>
-    </nav>
+    <button type="button" class="navbar-burger" id="navBurger" aria-label="Menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
   </div>
-</header>
+  <div class="navbar-parche-menu" id="navMenu">
+    <a class="navbar-item" href="index.html#entrada">Chatear</a>
+    <a class="navbar-item" href="index.html#salas">Salas de chat</a>
+    <a class="navbar-item" href="index.html#normas">Normas</a>
+  </div>
+</nav>
 
 <main class="contenedor">
   <section class="normas">
@@ -51,14 +55,43 @@
       <li>La radio se reproduce desde emisoras públicas de Radio Francia (FIP); tu IP puede ser visible para ese servicio al reproducirla.</li>
     </ul>
 
-    <p><a href="index.html" class="btn-chatear">← Volver al inicio</a></p>
+    <p><a href="index.html" class="btn-chatear-parche">← Volver al inicio</a></p>
   </section>
 </main>
 
-<footer class="pie">
-  <div class="contenedor">
-    <p>© 2026 El Parche de Cali · Hecho con 💛💚❤️ para los caleños</p>
+<footer class="pie-parche">
+  <div class="contenedor footer-grid">
+    <nav class="footer-col" aria-label="El Parche de Cali">
+      <h2>El Parche de Cali</h2>
+      <a href="index.html#entrada">Salas de chat</a>
+      <a href="index.html#salas">Salas de chat más visitadas</a>
+    </nav>
+    <nav class="footer-col" aria-label="Seguridad y comunidad">
+      <h2>Seguridad y comunidad</h2>
+      <a href="index.html#normas">Normas de convivencia</a>
+      <a href="index.html#normas">Moderación</a>
+    </nav>
+    <nav class="footer-col" aria-label="Legal">
+      <h2>Legal</h2>
+      <a href="terminos.html">Términos y condiciones</a>
+      <a href="terminos.html#privacidad">Políticas de privacidad</a>
+    </nav>
+  </div>
+  <div class="footer-bottom">
+    <div class="contenedor">
+      <p><strong>El Parche de Cali</strong> · la sucursal del cielo en línea</p>
+      <p>Copyright © 2026 · Hecho con 💛💚❤️ para los caleños</p>
+    </div>
   </div>
 </footer>
+<script>
+(function () {
+  var burger = document.getElementById("navBurger");
+  var menu = document.getElementById("navMenu");
+  burger.addEventListener("click", function () {
+    menu.classList.toggle("abierto");
+  });
+})();
+</script>
 </body>
 </html>

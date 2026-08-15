@@ -117,6 +117,146 @@ body {
 
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 
+/* ===== Navbar modelo DaleChat ===== */
+.navbar-parche {
+  background: var(--tinta);
+  color: #fff;
+  position: sticky; top: 0; z-index: 60;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 6px 16px;
+}
+.navbar-parche-brand { display: flex; align-items: center; flex: 1; }
+.navbar-parche .marca { padding: 2px 0; }
+.navbar-burger {
+  display: none; background: transparent; border: 0; cursor: pointer;
+  width: 44px; height: 44px; margin-left: auto; padding: 8px;
+}
+.navbar-burger span {
+  display: block; height: 2px; width: 22px; background: #fff;
+  margin: 5px auto; border-radius: 2px;
+}
+.navbar-parche-menu { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.navbar-item { color: #ddd; text-decoration: none; padding: 8px 12px; border-radius: 6px; font-size: 14px; font-weight: 600; display: block; }
+.navbar-item:hover { color: #fff; background: rgba(255,255,255,0.12); }
+.navbar-item.has-dropdown { position: relative; }
+.navbar-link { color: #ddd; padding: 8px 12px; border-radius: 6px; font-size: 14px; font-weight: 600; display: block; cursor: pointer; }
+.navbar-link:hover { color: #fff; background: rgba(255,255,255,0.12); }
+.navbar-dropdown {
+  display: none; position: absolute; right: 0; top: 100%;
+  background: #fff; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  min-width: 150px; padding: 6px 0;
+}
+.navbar-dropdown .navbar-item { color: var(--tinta); }
+.navbar-dropdown .navbar-item:hover { background: var(--fondo); color: var(--verde); }
+.navbar-item.has-dropdown:hover .navbar-dropdown { display: block; }
+
+/* ===== Hero / tarjeta modelo DaleChat ===== */
+.hero-parche { text-align: center; padding: 36px 0 28px; }
+.hero-parche h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(40px, 7vw, 60px);
+  margin: 0 0 10px;
+  color: var(--tinta);
+  letter-spacing: 1px;
+}
+.hero-parche-desc {
+  color: var(--gris); max-width: 680px; margin: 0 auto 24px;
+  font-size: 15px; font-style: italic; line-height: 1.6;
+}
+.hero-parche-box {
+  background: var(--tarjeta);
+  border: 1px solid #e6e1d6;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  padding: 22px;
+  max-width: 460px;
+  margin: 0 auto;
+  text-align: left;
+}
+.form-error { color: var(--rojo); font-weight: 700; font-size: 14px; margin-bottom: 10px; }
+.campo { margin-bottom: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.campo-input-ico {
+  display: flex; align-items: center; gap: 10px; flex: 1;
+  border: 1.5px solid #cfcbc2; border-radius: 8px; padding: 4px 12px;
+}
+.campo-input-ico:focus-within { border-color: var(--verde); }
+.campo-input-ico input {
+  border: 0; outline: 0; flex: 1; padding: 10px 0;
+  font-size: 16px; background: transparent; color: var(--tinta);
+}
+.campo-ico { font-size: 16px; }
+.campo-etiqueta { font-size: 14px; font-weight: 700; color: var(--tinta); }
+.campo-select {
+  flex: 1; min-width: 130px; border: 1.5px solid #cfcbc2; border-radius: 8px;
+  padding: 9px 10px; font-size: 15px; background: #fff; color: var(--tinta);
+}
+.campo-check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--tinta); cursor: pointer; }
+.campo-check input { width: 16px; height: 16px; accent-color: var(--verde); cursor: pointer; }
+.campo-check a { color: var(--verde); font-weight: 600; }
+.campo-perfil { gap: 10px; }
+.campo-terminos { margin-top: 2px; }
+.btn-chatear-parche {
+  background: var(--rojo); color: #fff; border: 0; border-radius: 8px;
+  padding: 14px; font-size: 17px; font-weight: 800; cursor: pointer;
+  width: 100%; transition: transform .08s, box-shadow .15s;
+  box-shadow: 0 4px 0 #a01a20;
+}
+.btn-chatear-parche:hover { transform: translateY(-1px); box-shadow: 0 6px 0 #a01a20; }
+.btn-chatear-parche:active { transform: translateY(2px); box-shadow: 0 2px 0 #a01a20; }
+
+/* ===== Salas de chat (grid) ===== */
+.section-parche { padding: 30px 0 10px; }
+.section-parche h2 { font-family: 'Bebas Neue', sans-serif; font-size: 32px; margin: 0 0 18px; color: var(--tinta); text-align: center; }
+.salas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.sala-link {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--tarjeta); border: 1px solid #e6e1d6; border-radius: 10px;
+  padding: 12px 14px; text-decoration: none; color: var(--tinta);
+  transition: transform .1s, box-shadow .15s, border-color .15s;
+}
+.sala-link:hover { transform: translateY(-2px); box-shadow: var(--sombra); border-color: var(--verde); }
+.sala-link-ico { font-size: 34px; flex: 0 0 auto; }
+.sala-link-cuerpo { display: flex; flex-direction: column; }
+.sala-link-cuerpo b { font-size: 16px; }
+.sala-link-cuerpo small { color: var(--gris); font-size: 13px; line-height: 1.4; }
+.btn-explorar {
+  display: inline-block; margin: 18px 0 6px; width: 100%;
+  text-align: center; background: var(--verde); color: #fff;
+  border-radius: 8px; padding: 12px; font-size: 15px; font-weight: 700;
+  text-decoration: none; box-sizing: border-box;
+}
+.btn-explorar:hover { opacity: .92; }
+
+/* ===== Tiles informativos ===== */
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.tile-parche {
+  background: var(--tarjeta); border-radius: 12px; box-shadow: var(--sombra);
+  padding: 18px; border-top: 4px solid var(--oro);
+}
+.tile-parche:nth-child(2) { border-top-color: var(--verde); }
+.tile-parche:nth-child(3) { border-top-color: var(--rojo); }
+.tile-parche h3 { font-family: 'Bebas Neue', sans-serif; font-size: 22px; margin: 0 0 8px; }
+.tile-parche p, .tile-parche li { color: var(--gris); font-size: 14px; line-height: 1.6; }
+.tile-parche ol { margin: 0; padding-left: 18px; }
+.tile-parche li { margin-bottom: 4px; }
+
+.normas-parche { background: var(--tinta); color: #ddd; padding: 26px 0 30px; }
+.normas-parche h2 { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--oro); margin: 0 0 8px; text-align: center; }
+.normas-parche p { color: #ccc; font-size: 14px; line-height: 1.7; max-width: 720px; margin: 0 auto; text-align: center; }
+
+/* ===== Footer modelo DaleChat ===== */
+.pie-parche { background: #f2f0ea; border-top: 1px solid #e0dcd2; margin-top: 24px; }
+.footer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 26px 16px 18px; }
+.footer-col h2 { color: var(--tinta); font-size: 15px; font-weight: 800; margin: 0 0 10px; letter-spacing: 0; }
+.footer-col a { color: var(--verde); display: block; font-size: 14px; line-height: 1.4; margin: 0 0 8px; text-decoration: none; }
+.footer-col a:hover { text-decoration: underline; }
+.footer-bottom { border-top: 1px solid #e0dcd2; color: #536070; font-size: 14px; line-height: 1.55; padding: 16px 0; text-align: center; }
+.footer-bottom p { margin: 0 0 6px; }
+.footer-bottom strong { color: var(--tinta); }
+
+.oculto { display: none; }
+
 /* ===== Radio ===== */
 .radio-barra {
   display: flex; align-items: center; gap: 8px;
@@ -396,4 +536,14 @@ body.en-privado .sala-cabecera { background: var(--rojo); }
 
 @media (max-width: 640px) {
   .panel-mensajes { padding: 12px; }
+  .navbar-parche { padding: 6px 12px; }
+  .navbar-burger { display: block; }
+  .navbar-parche-menu { display: none; width: 100%; flex-direction: column; align-items: stretch; padding-bottom: 8px; }
+  .navbar-parche-menu.abierto { display: flex; }
+  .navbar-item.has-dropdown { position: static; }
+  .navbar-dropdown { position: static; box-shadow: none; background: rgba(255,255,255,0.08); margin-top: 4px; }
+  .navbar-dropdown .navbar-item { color: #ddd; }
+  .tiles { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr; text-align: center; }
+  .salas-grid { grid-template-columns: 1fr; }
 }
