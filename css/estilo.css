@@ -167,8 +167,109 @@ body.sala { display: flex; flex-direction: column; height: 100vh; height: 100dvh
 }
 #btn-enviar:disabled { opacity: .5; cursor: not-allowed; }
 
-@media (max-width: 640px) {
-  .sala-cuerpo { grid-template-columns: 1fr; }
-  .panel-usuarios { display: none; }
+/* ===== Chat privado ===== */
+.privado-barra {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--rojo); color: #fff;
+  padding: 10px 16px;
+}
+.privado-barra.oculto { display: none; }
+.privado-volver {
+  background: rgba(255,255,255,0.18); border: 0; color: #fff;
+  border-radius: 6px; padding: 4px 12px; font-size: 16px; cursor: pointer;
+}
+.privado-titulo { font-weight: 700; flex: 1; font-size: 15px; }
+.privado-bloqueo { font-size: 18px; }
+
+body.en-privado .sala-cabecera { background: var(--rojo); }
+
+.mensaje.privado .nick::after { content: ': '; }
+.mensaje.privado .texto { font-style: italic; }
+.mensaje.privado .hora { margin-left: auto; font-size: 10px; color: #aaa; }
+.mensaje.privado.propio { background: #e9f7ef; border: 1px solid #bfe3ce; }
+.mensaje.privado:not(.propio) { background: #fdf3d7; border: 1px solid #f0dc9c; }
+.mensaje.privado { border-radius: 10px; padding: 8px 10px; }
+
+/* ===== Archivos / fotos / videos ===== */
+.mensaje .archivo { display: flex; flex-direction: column; gap: 4px; }
+.mensaje .archivo-sel { max-width: 260px; }
+.mensaje .archivo-sel img { width: 100%; border-radius: 8px; display: block; cursor: zoom-in; }
+.mensaje .archivo-sel video { width: 100%; border-radius: 8px; max-height: 300px; background: #000; }
+.mensaje .archivo-sel a { color: var(--verde); font-weight: 700; text-decoration: none; }
+.mensaje .archivo-nombre { font-size: 11px; color: #888; word-break: break-all; }
+.hora { font-size: 10px; color: #aaa; margin-left: auto; align-self: center; white-space: nowrap; }
+
+/* ===== Lista de usuarios (con candado) ===== */
+.panel-usuarios-cab { display: flex; align-items: center; justify-content: space-between; }
+.btn-cerrar-usuarios {
+  display: none; background: transparent; border: 0; color: #888;
+  font-size: 18px; cursor: pointer; padding: 4px 8px;
+}
+.panel-usuarios li { display: flex; align-items: center; gap: 6px; }
+.panel-usuarios li .dot { font-size: 10px; }
+.panel-usuarios li.yo { opacity: .55; }
+.panel-usuarios li .btn-candado {
+  margin-left: auto; background: transparent; border: 0;
+  cursor: pointer; font-size: 14px; opacity: .7; padding: 2px 4px;
+}
+.panel-usuarios li .btn-candado:hover { opacity: 1; }
+.panel-usuarios li .no-leidos {
+  background: var(--rojo); color: #fff; border-radius: 10px;
+  min-width: 18px; height: 18px; font-size: 11px;
+  display: inline-flex; align-items: center; justify-content: center; padding: 0 5px;
+}
+
+/* ===== Adjuntar archivo ===== */
+.adjuntar-wrap { position: relative; display: flex; align-items: center; }
+.btn-adjuntar {
+  display: flex; align-items: center; justify-content: center;
+  width: 46px; height: 46px; border-radius: 50%;
+  background: var(--verde); color: #fff; font-size: 20px; cursor: pointer;
+  flex: 0 0 auto;
+}
+.btn-adjuntar:active { transform: scale(.94); }
+
+.adjunto-vista {
+  background: #fff; border-top: 1px solid #e0dcd2;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 20px; gap: 10px;
+}
+.adjunto-vista.oculto { display: none; }
+.adjunto-nombre { font-size: 13px; color: var(--tinta); word-break: break-all; }
+.adjunto-quitar { background: #eee; border: 0; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; color: #b00; }
+
+/* ===== Botón usuarios en cabecera (móvil) ===== */
+.btn-usuarios {
+  display: none; background: rgba(255,255,255,0.14); border: 0; color: #fff;
+  border-radius: 20px; padding: 6px 12px; font-size: 15px; cursor: pointer;
+}
+
+/* ===== Móvil ===== */
+@media (max-width: 860px) {
+  .btn-usuarios { display: inline-flex; }
+  .btn-cerrar-usuarios { display: block; }
+  .sala-cuerpo { grid-template-columns: 1fr; padding: 8px 10px; }
+  .panel-usuarios {
+    display: block;
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 100;
+    width: min(80vw, 300px);
+    background: #fff; box-shadow: -8px 0 24px rgba(0,0,0,0.25);
+    transform: translateX(100%); transition: transform .22s ease;
+    border-radius: 0; padding-top: 14px;
+  }
+  .panel-usuarios.abierto { transform: translateX(0); }
   .marca-txt small { display: none; }
+  .sala-cabecera .contenedor { gap: 6px; }
+  .chip { display: none; }
+  .btn-salir { padding: 6px 12px; font-size: 12px; }
+  .privado-barra { padding: 8px 10px; }
+  .form-mensaje { gap: 8px; padding-top: 6px; padding-bottom: 6px; }
+  .btn-adjuntar { width: 42px; height: 42px; }
+  #mensaje-input { font-size: 16px; padding: 12px 14px; }
+  #btn-enviar { padding: 0 16px; font-size: 14px; }
+  .mensaje .archivo-sel { max-width: 200px; }
+}
+
+@media (max-width: 640px) {
+  .panel-mensajes { padding: 12px; }
 }
