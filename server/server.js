@@ -7,7 +7,7 @@ const path = require("path");
 const { WebSocketServer, WebSocket } = require("ws");
 
 const PUERTO = process.env.PORT || 3000;
-const PUBLIC = path.join(__dirname, "..", "public");
+const PUBLIC = path.join(__dirname, "..");
 const MAX_NICK = 24;
 const MAX_MSG = 500;
 
@@ -54,9 +54,14 @@ const servidor = http.createServer((req, res) => {
   if (ruta === "/") ruta = "/index.html";
 
   // Evitar path traversal
-  const archivo = path.join(PUBLIC, ruta);
-  if (!archivo.startsWith(PUBLIC)) {
+  const raiz = path.resolve(PUBLIC);
+  const archivo = path.join(raiz, ruta);
+  if (!archivo.startsWith(raiz)) {
     res.writeHead(403); res.end("Prohibido"); return;
+  }
+  // No servir archivos internos del repo
+  if (/^[\\/](node_modules|server|\.git)[\\/]/.test(ruta)) {
+    res.writeHead(404); res.end("No existe."); return;
   }
 
   fs.readFile(archivo, (err, data) => {
