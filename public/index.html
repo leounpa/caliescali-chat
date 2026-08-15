@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El Parche de Cali · Chat Caleño Gratis</title>
+<meta name="description" content="El Parche de Cali. Chat gratis de los caleños. Entra con tu apodo y conoce gente de Cali, rumba, salsa y buena vibra. Sin registro.">
+<meta name="keywords" content="el parche de cali, chat cali, chat caleño, dale chat cali, chat valle del cauca, chat gratis colombia">
+<meta name="robots" content="all">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='33' fill='%23ffcf00'/><rect y='33' width='100' height='34' fill='%23007a4d'/><rect y='67' width='100' height='33' fill='%23e3222a'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<div class="bandera-top">
+  <span></span><span></span><span></span>
+</div>
+
+<header class="cabecera">
+  <div class="contenedor">
+    <a href="index.html" class="marca">
+      <span class="marca-ico">💃</span>
+      <span class="marca-txt">
+        <strong>El Parche de Cali</strong>
+        <small>la sucursal del cielo en línea</small>
+      </span>
+    </a>
+    <nav class="nav">
+      <a href="index.html" class="activo">Inicio</a>
+      <a href="chat.html">Chatear</a>
+      <a href="#normas">Normas</a>
+    </nav>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="hero">
+    <h1>¡Bienvenido(a) al Parche! 🎶</h1>
+    <p>El chat de los caleños y caleñas. Salsa, rumba, amor y buena vibra. Solo elige tu apodo y entra a <strong>#Cali</strong>. ¡Así de fácil, parce!</p>
+
+    <div class="panel-entrada">
+      <form id="form-entrada" class="form-entrada">
+        <label for="nick" class="sr-only">Nombre o apodo</label>
+        <div class="entrada-nick">
+          <span class="icono-usuario">👤</span>
+          <input type="text" id="nick" name="nick" maxlength="24" placeholder="¿Nombre o apodo?" autocomplete="nickname" required>
+        </div>
+        <label for="sala" class="sr-only">Sala</label>
+        <div class="entrada-sala">
+          <span class="icono-sala">#</span>
+          <select id="sala" name="sala">
+            <option value="cali" selected>#Cali · Principal</option>
+            <option value="salsa">#Salsa</option>
+            <option value="rumba">#Rumba</option>
+            <option value="colombia">#Colombia</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-chatear">💬 CHATEAR</button>
+      </form>
+      <p class="aviso">Sin registro · Gratis · Anónimo · En tu navegador</p>
+    </div>
+
+    <ul class="puntos">
+      <li><strong>ENVIAR FOTOS</strong></li>
+      <li><strong>CHATEAR GRATIS</strong></li>
+      <li><strong>ANÓNIMO</strong></li>
+      <li><strong>PERSONAS REALES</strong></li>
+      <li><strong>CHAT PRIVADO</strong></li>
+      <li><strong>CHAT EN VIVO</strong></li>
+    </ul>
+  </section>
+
+  <section id="normas" class="normas">
+    <h2>📢 Normas del Parche</h2>
+    <p>La sala <strong>#Cali</strong> es un chat público y gratuito donde se reúnen cientos de personas. Para mantener un ambiente bacano, sé respetuoso y compórtate como en la vida real. No compartas datos personales de otros, nada de acoso ni spam. Los moderadores están para ayudarte: ¡disfruta y diviértete!</p>
+  </section>
+</main>
+
+<footer class="pie">
+  <div class="contenedor">
+    <p>© 2026 El Parche de Cali · Hecho con 💛💚❤️ para los caleños</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var nick = localStorage.getItem("parcheNick");
+  if (nick) { document.getElementById("nick").value = nick; }
+  var sala = localStorage.getItem("parcheSala");
+  if (sala) { document.getElementById("sala").value = sala; }
+
+  document.getElementById("form-entrada").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var n = document.getElementById("nick").value.trim().slice(0, 24);
+    if (!n) { alert("Pon tu apodo, parce."); return; }
+    var s = document.getElementById("sala").value;
+    localStorage.setItem("parcheNick", n);
+    localStorage.setItem("parcheSala", s);
+    location.href = "chat.html?nick=" + encodeURIComponent(n) + "&sala=" + encodeURIComponent(s);
+  });
+})();
+</script>
+</body>
+</html>

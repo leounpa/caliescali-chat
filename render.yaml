@@ -1,0 +1,12 @@
+# Render blueprint · El Parche de Cali
+services:
+  - type: web
+    name: el-parche-de-cali
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 18
