@@ -1,16 +1,18 @@
-/* ===== El Parche de Cali · Servidor ===== */
+/* ===== El Parche de Cali · Servidor REST ===== */
 "use strict";
 
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { WebSocketServer, WebSocket } = require("ws");
+const crypto = require("crypto");
 
 const PUERTO = process.env.PORT || 3000;
 const PUBLIC = path.join(__dirname, "..");
 const MAX_NICK = 24;
 const MAX_MSG = 500;
-const MAX_DATOS = 9 * 1024 * 1024; // ~6 MB por archivo (base64)
+const MAX_ARCHIVO = 6 * 1024 * 1024;
+const MAX_MENSAJES = 200;
+const LIMITE_SILENCIO = 10 * 60 * 1000;
 
 const TIPOS = {
   "html": "text/html; charset=utf-8",
@@ -18,55 +20,96 @@ const TIPOS = {
   "js": "application/javascript; charset=utf-8",
   "png": "image/png",
   "jpg": "image/jpeg",
+  "jpeg": "image/jpeg",
   "svg": "image/svg+xml",
   "ico": "image/x-icon",
-  "webp": "image/webp"
+  "webp": "image/webp",
+  "json": "application/json",
+  "woff": "font/woff",
+  "woff2": "font/woff2"
 };
 
-// Salas disponibles
-const SALAS = { cali: "#Cali", salsa: "#Salsa", rumba: "#Rumba", colombia: "#Colombia", general: "#General", amistad: "#Amistad" };
+const SALAS = { cali:"#Cali", salsa:"#Salsa", rumba:"#Rumba", colombia:"#Colombia", general:"#General", amistad:"#Amistad" };
 
-// Estado: sala -> Set de clientes
-const salas = {};
-Object.keys(SALAS).forEach(k => { salas[k] = new Set(); });
-
-// Estado global: nick -> ws (para chat privado entre salas/usuarios)
-const conexiones = {};
+// ===== Estado en memoria =====
+let msgIdCounter = 0;
+const mensajes = {};
+Object.keys(SALAS).forEach(k => { mensajes[k] = []; });
+const privados = {};
+const usuarios = {};
+const nickTokens = {};
 
 // ===== Moderación =====
 const MOD_ADMIN = (process.env.MOD_ADMIN || "").trim();
-const mods = new Set();          // nicks moderadores
-const historial = new Map();     // nick -> {expulsiones: n} (historial permanente)
-const banes = new Map();         // nick -> {hasta: timestamp}
-const mutes = new Map();         // nick -> {hasta: timestamp}
-const videos = {};               // sala -> Map nick -> ws (en vivo)
-Object.keys(SALAS).forEach(k => { videos[k] = new Map(); });
+const mods = new Set();
+const banes = new Map();
+const mutes = new Map();
+const historial = new Map();
 
-// Lista base de palabras ofensivas (normalizadas, sin acentos)
+// ===== Roles y puntos =====
+const ROLES = {
+  nuevo:    { nombre:"nuevo",    label:"Nuevo",    puntos:0,   color:"#3730a3" },
+  activo:   { nombre:"activo",   label:"Activo",   puntos:10,  color:"#065f46" },
+  veterano: { nombre:"veterano", label:"Veterano", puntos:50,  color:"#92400e" },
+  leyenda:  { nombre:"leyenda",  label:"Leyenda",  puntos:200, color:"#9d174d" }
+};
+const PUNTOS_POR_MSG = 1;
+const PUNTOS_POR_INTERVALO = 3;
+const ARCHIVO_ROLES = path.join(__dirname, "roles.json");
+let usuariosPuntos = {};
+
+function cargarRoles() {
+  try { if (fs.existsSync(ARCHIVO_ROLES)) usuariosPuntos = JSON.parse(fs.readFileSync(ARCHIVO_ROLES, "utf8")); } catch(e) { usuariosPuntos = {}; }
+}
+function guardarRoles() { try { fs.writeFileSync(ARCHIVO_ROLES, JSON.stringify(usuariosPuntos, null, 2)); } catch(e) {} }
+cargarRoles();
+
+function rolDe(nick) {
+  const p = usuariosPuntos[nick];
+  if (!p) return ROLES.nuevo;
+  const pts = p.puntos || 0;
+  if (pts >= 200) return ROLES.leyenda;
+  if (pts >= 50) return ROLES.veterano;
+  if (pts >= 10) return ROLES.activo;
+  return ROLES.nuevo;
+}
+
+function sumarPuntos(nick, cantidad) {
+  if (!usuariosPuntos[nick]) {
+    usuariosPuntos[nick] = { puntos:0, mensajes:0, tiempoInicio:Date.now(), rolAnterior:"nuevo" };
+  }
+  const u = usuariosPuntos[nick];
+  const rolViejo = rolDe(nick);
+  u.puntos = (u.puntos || 0) + cantidad;
+  if (cantidad === PUNTOS_POR_MSG) u.mensajes = (u.mensajes || 0) + 1;
+  const rolNuevo = rolDe(nick);
+  u.rolAnterior = rolNuevo.nombre;
+  guardarRoles();
+  return { rolViejo, rolNuevo, subio: rolViejo.nombre !== rolNuevo.nombre };
+}
+
+// ===== Filtro ofensivas =====
 const OFENSIVAS = [
-  "hijueputa", "hijuepucha", "malparido", "malparida", "marica", "maricon",
-  "perra", "puta", "puto", "pendejo", "pendeja", "huevon", "huevona",
-  "guevon", "guevona", "imbecil", "estupido", "estupida", "idiota",
-  "cabron", "cabrona", "zorra", "perro", "mierda", "carajo", "verga",
-  "culo", "culero", "nazi", "fascista", "retrasado", "mongol", "negro",
-  "judio", "chino", "gordo", "feo", "bobo", "tonto", "asqueroso"
+  "hijueputa","hijuepucha","malparido","malparida","marica","maricon",
+  "perra","puta","puto","pendejo","pendeja","huevon","huevona",
+  "guevon","guevona","imbecil","estupido","estupida","idiota",
+  "cabron","cabrona","zorra","mierda","carajo","verga",
+  "culo","culero","nazi","fascista","retrasado","mongol","negro",
+  "judio","chino","gordo","feo","bobo","tonto","asqueroso"
 ];
 
-function normalizar(texto) {
-  return texto.toLowerCase()
-    .replace(/[áàäâ]/g, "a").replace(/[éèëê]/g, "e")
-    .replace(/[íìïî]/g, "i").replace(/[óòöô]/g, "o")
-    .replace(/[úùüû]/g, "u").replace(/ñ/g, "n")
-    .replace(/[^a-z0-9\s]/g, "")
-    .replace(/\s+/g, " ").trim();
+function normalizar(t) {
+  return t.toLowerCase()
+    .replace(/[áàäâ]/g,"a").replace(/[éèëê]/g,"e")
+    .replace(/[íìïî]/g,"i").replace(/[óòöô]/g,"o")
+    .replace(/[úùüû]/g,"u").replace(/ñ/g,"n")
+    .replace(/[^a-z0-9\s]/g,"").replace(/\s+/g," ").trim();
 }
 
-function tieneOfensiva(texto) {
-  const limpio = " " + normalizar(texto) + " ";
-  return OFENSIVAS.some(p => limpio.includes(" " + p + " "));
+function tieneOfensiva(t) {
+  const l = " " + normalizar(t) + " ";
+  return OFENSIVAS.some(p => l.includes(" " + p + " "));
 }
-
-function horasRestantes(ms) { return Math.max(0, Math.ceil((ms - Date.now()) / 3600000)); }
 
 function estaBaneado(nick) {
   const b = banes.get(nick);
@@ -82,330 +125,399 @@ function estaMuteado(nick) {
   return true;
 }
 
+function horasRestantes(ms) { return Math.max(0, Math.ceil((ms - Date.now()) / 3600000)); }
+
 function registrarInfraccion(nick) {
-  const h = historial.get(nick) || { expulsiones: 0 };
+  const h = historial.get(nick) || { expulsiones:0 };
   h.expulsiones = (h.expulsiones || 0) + 1;
   historial.set(nick, h);
-  // 1ª expulsión: advertencia. 2ª: 2 horas. Luego 4, 8, 24, y 48 por cada expulsión extra
   const horas = [0, 2, 4, 8, 24, 48];
   const idx = Math.min(h.expulsiones, horas.length) - 1;
-  const b = { hasta: Date.now() + horas[idx] * 3600000 };
-  banes.set(nick, b);
+  banes.set(nick, { hasta: Date.now() + horas[idx] * 3600000 });
   return h;
-}
-
-function totalExpulsiones(nick) {
-  const h = historial.get(nick);
-  return h ? h.expulsiones : 0;
-}
-
-// ===== Utilidades de red =====
-function mensaje(obj) { return JSON.stringify(obj); }
-
-function usuariosDe(sala) {
-  const lista = [];
-  salas[sala].forEach(c => { if (c.nick) lista.push(c.nick); });
-  return lista;
-}
-
-function infoDe(ws) {
-  return {
-    nick: ws.nick,
-    avatar: ws.avatar || "🙂",
-    color: ws.color || "#1a1a2e",
-    esMod: esMod(ws.nick)
-  };
-}
-
-function detallesDe(sala) {
-  const lista = [];
-  salas[sala].forEach(c => { if (c.nick) lista.push(infoDe(c)); });
-  return lista;
-}
-
-function difundir(sala, obj) {
-  const datos = mensaje(obj);
-  salas[sala].forEach(c => {
-    if (c.readyState === WebSocket.OPEN) c.send(datos);
-  });
-}
-
-function notificarUsuarios(sala) {
-  difundir(sala, { t: "users", lista: usuariosDe(sala), detalles: detallesDe(sala) });
-}
-
-function enviarA(nick, obj) {
-  const ws = conexiones[nick];
-  if (ws && ws.readyState === WebSocket.OPEN) ws.send(mensaje(obj));
 }
 
 function esMod(nick) { return mods.has(nick) || nick === MOD_ADMIN; }
 
-function desconectar(ws) {
-  if (ws.sala && ws.nick) {
-    salas[ws.sala].delete(ws);
-    videos[ws.sala].delete(ws.nick);
-    difundir(ws.sala, { t: "videoOff", de: ws.nick });
-    difundir(ws.sala, { t: "sys", texto: "👋 " + ws.nick + " salió del Parche" });
-    notificarUsuarios(ws.sala);
-  }
-  if (ws.nick && conexiones[ws.nick] === ws) {
-    delete conexiones[ws.nick];
-  }
+// ===== Utilidades =====
+function generarToken() { return crypto.randomBytes(16).toString("hex"); }
+
+function agregarMensaje(sala, data) {
+  data.id = ++msgIdCounter;
+  data.fecha = Date.now();
+  if (!mensajes[sala]) mensajes[sala] = [];
+  mensajes[sala].push(data);
+  if (mensajes[sala].length > MAX_MENSAJES) mensajes[sala].shift();
+  return data;
 }
 
-// ===== Servidor HTTP (estáticos) =====
-const servidor = http.createServer((req, res) => {
-  let ruta = decodeURIComponent(req.url.split("?")[0]);
+function usuariosEnSala(sala) {
+  const lista = [];
+  Object.keys(usuarios).forEach(function(token) {
+    const u = usuarios[token];
+    if (u.sala === sala) {
+      const r = rolDe(u.nick);
+      const pts = (usuariosPuntos[u.nick] || {}).puntos || 0;
+      lista.push({ nick:u.nick, avatar:u.avatar, color:u.color, rol:r.nombre, rolLabel:r.label, puntos:pts, esMod:esMod(u.nick) });
+    }
+  });
+  return lista;
+}
+
+function buscarTokenPorNick(nick) {
+  return nickTokens[nick] || null;
+}
+
+// ===== Utilidades HTTP =====
+function jsonRes(res, code, obj) {
+  res.writeHead(code, { "Content-Type":"application/json; charset=utf-8" });
+  res.end(JSON.stringify(obj));
+}
+
+function parseBody(req) {
+  return new Promise(function(resolve, reject) {
+    var body = "";
+    req.on("data", function(chunk) {
+      body += chunk;
+      if (body.length > MAX_ARCHIVO + 1024) { req.destroy(); reject(new Error("too large")); }
+    });
+    req.on("end", function() { try { resolve(JSON.parse(body)); } catch(e) { resolve({}); } });
+    req.on("error", function(e) { reject(e); });
+  });
+}
+
+function leerQuery(url) {
+  var params = {};
+  var idx = url.indexOf("?");
+  if (idx === -1) return params;
+  var qs = url.slice(idx + 1).split("&");
+  for (var i = 0; i < qs.length; i++) {
+    var par = qs[i].split("=");
+    if (par.length === 2) params[decodeURIComponent(par[0])] = decodeURIComponent(par[1]);
+  }
+  return params;
+}
+
+// ===== Servidor HTTP =====
+var servidor = http.createServer(function(req, res) {
+  var ruta = decodeURIComponent(req.url.split("?")[0]);
   if (ruta === "/") ruta = "/index.html";
 
-  const raiz = path.resolve(PUBLIC);
-  const archivo = path.join(raiz, ruta);
-  if (!archivo.startsWith(raiz)) {
-    res.writeHead(403); res.end("Prohibido"); return;
-  }
-  if (/^[\\/](node_modules|server|\.git)[\\/]/.test(ruta)) {
-    res.writeHead(404); res.end("No existe."); return;
+  var params = leerQuery(req.url);
+
+  // === API REST ===
+  if (ruta.indexOf("/api/") === 0) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
+
+    // POST /api/join
+    if (ruta === "/api/join" && req.method === "POST") {
+      parseBody(req).then(function(b) {
+        var nick = (b.nick || "").trim().slice(0, MAX_NICK);
+        var sala = b.sala || "cali";
+        var avatar = (b.avatar || "🙂").slice(0, 8);
+        var color = /^#[0-9a-f]{6}$/i.test(b.color || "") ? b.color : "#007a4d";
+
+        if (!nick || nick.length < 2) return jsonRes(res, 400, { error:"Apodo inválido (mín. 2 caracteres)." });
+        if (!SALAS[sala]) return jsonRes(res, 400, { error:"Sala inválida." });
+
+        var baneo = estaBaneado(nick);
+        if (baneo) return jsonRes(res, 403, { error:"Estás expulsado. Vuelve en " + horasRestantes(baneo.hasta) + " hora(s)." });
+
+        // Desconectar sesión anterior del mismo nick
+        var tokenViejo = nickTokens[nick];
+        if (tokenViejo && usuarios[tokenViejo]) {
+          var viejo = usuarios[tokenViejo];
+          agregarMensaje(viejo.sala, { tipo:"sys", texto:"👋 " + nick + " se reconectó", nick:"" });
+          delete usuarios[tokenViejo];
+        }
+
+        var token = generarToken();
+        usuarios[token] = { nick:nick, sala:sala, avatar:avatar, color:color, visto:Date.now() };
+        nickTokens[nick] = token;
+
+        if (!usuariosPuntos[nick]) {
+          usuariosPuntos[nick] = { puntos:0, mensajes:0, tiempoInicio:Date.now(), rolAnterior:"nuevo" };
+          guardarRoles();
+        } else {
+          usuariosPuntos[nick].tiempoInicio = Date.now();
+          guardarRoles();
+        }
+
+        // Primer usuario es moderador
+        if (mods.size === 0 && !esMod(nick)) {
+          mods.add(nick);
+        }
+
+        agregarMensaje(sala, { tipo:"sys", texto:"🎉 " + nick + " entró al Parche de Cali", nick:"" });
+
+        var miRol = rolDe(nick);
+        jsonRes(res, 200, {
+          token:token,
+          nick:nick,
+          sala:sala,
+          rol:miRol.nombre,
+          rolLabel:miRol.label,
+          puntos:usuariosPuntos[nick].puntos,
+          esMod:esMod(nick)
+        });
+      }).catch(function() { jsonRes(res, 500, { error:"Error del servidor." }); });
+      return;
+    }
+
+    // GET /api/messages?sala=X&since=0&token=T
+    if (ruta === "/api/messages" && req.method === "GET") {
+      var token = params.token;
+      var sala = params.sala || "cali";
+      var since = parseInt(params.since || "0", 10);
+      if (!token || !usuarios[token]) return jsonRes(res, 401, { error:"Sesión inválida." });
+      usuarios[token].visto = Date.now();
+      var msgs = mensajes[sala] || [];
+      var filtrados = since ? msgs.filter(function(m) { return m.id > since; }) : msgs.slice(-50);
+      jsonRes(res, 200, { messages:filtrados, lastId:msgIdCounter });
+      return;
+    }
+
+    // POST /api/messages?token=T
+    if (ruta === "/api/messages" && req.method === "POST") {
+      var token = params.token;
+      if (!token || !usuarios[token]) return jsonRes(res, 401, { error:"Sesión inválida." });
+      var u = usuarios[token];
+
+      if (estaMuteado(u.nick)) return jsonRes(res, 403, { error:"🔇 Estás silenciado." });
+
+      parseBody(req).then(function(b) {
+        // Archivo
+        if (b.nombre && b.mime && b.datos) {
+          if (b.datos.length > MAX_ARCHIVO) return jsonRes(res, 400, { error:"Archivo muy grande (máx. 6 MB)." });
+          sumarPuntos(u.nick, PUNTOS_POR_MSG);
+          var rol = rolDe(u.nick);
+          agregarMensaje(u.sala, { tipo:"archivo", nick:u.nick, avatar:u.avatar, color:u.color, nombre:b.nombre, mime:b.mime, datos:b.datos, rol:rol.nombre, puntos:(usuariosPuntos[u.nick]||{}).puntos||0 });
+          return jsonRes(res, 200, { ok:true });
+        }
+
+        // Texto
+        var texto = String(b.texto || "").trim().slice(0, MAX_MSG);
+        if (!texto) return jsonRes(res, 400, { error:"Mensaje vacío." });
+
+        if (tieneOfensiva(texto)) {
+          var inf = registrarInfraccion(u.nick);
+          var aviso = inf.expulsiones === 1
+            ? "⚠️ Advertencia por lenguaje ofensivo. Es tu 1ª."
+            : "🚫 Expulsado " + horasRestantes(banes.get(u.nick).hasta) + "h por lenguaje ofensivo. #" + inf.expulsiones;
+          return jsonRes(res, 403, { error:aviso });
+        }
+
+        var r = sumarPuntos(u.nick, PUNTOS_POR_MSG);
+        agregarMensaje(u.sala, { tipo:"msg", nick:u.nick, avatar:u.avatar, color:u.color, texto:texto, rol:r.rolNuevo.nombre, puntos:(usuariosPuntos[u.nick]||{}).puntos||0 });
+
+        if (r.subio) {
+          agregarMensaje(u.sala, { tipo:"sys", texto:"🎉 ¡" + u.nick + " alcanzó el rango de " + r.rolNuevo.label + "! 🏆", nick:"" });
+        }
+
+        jsonRes(res, 200, { ok:true });
+      }).catch(function() { jsonRes(res, 500, { error:"Error del servidor." }); });
+      return;
+    }
+
+    // POST /api/priv?token=T
+    if (ruta === "/api/priv" && req.method === "POST") {
+      var token = params.token;
+      if (!token || !usuarios[token]) return jsonRes(res, 401, { error:"Sesión inválida." });
+      var u = usuarios[token];
+
+      parseBody(req).then(function(b) {
+        var para = String(b.para || "").trim();
+        var texto = String(b.texto || "").trim().slice(0, MAX_MSG);
+        if (!para || !texto) return jsonRes(res, 400, { error:"Faltan datos." });
+        if (para === u.nick) return jsonRes(res, 400, { error:"No puedes escribirte a ti mismo." });
+
+        // Verificar que destino existe
+        if (!nickTokens[para]) return jsonRes(res, 404, { error: para + " no está conectado." });
+
+        var key = [u.nick, para].sort().join("|");
+        if (!privados[key]) privados[key] = [];
+        privados[key].push({ id:++msgIdCounter, from:u.nick, texto:texto, fecha:Date.now(), tipo:"msg" });
+        if (privados[key].length > 100) privados[key] = privados[key].slice(-50);
+
+        jsonRes(res, 200, { ok:true });
+      }).catch(function() { jsonRes(res, 500, { error:"Error del servidor." }); });
+      return;
+    }
+
+    // POST /api/privArchivo?token=T
+    if (ruta === "/api/privArchivo" && req.method === "POST") {
+      var token = params.token;
+      if (!token || !usuarios[token]) return jsonRes(res, 401, { error:"Sesión inválida." });
+      var u = usuarios[token];
+
+      parseBody(req).then(function(b) {
+        var para = String(b.para || "").trim();
+        if (!para || para === u.nick) return jsonRes(res, 400, { error:"Faltan datos." });
+        if (!nickTokens[para]) return jsonRes(res, 404, { error: para + " no está conectado." });
+        if (!b.nombre || !b.mime || !b.datos) return jsonRes(res, 400, { error:"Faltan datos del archivo." });
+        if (b.datos.length > MAX_ARCHIVO) return jsonRes(res, 400, { error:"Archivo muy grande (máx. 6 MB)." });
+
+        var key = [u.nick, para].sort().join("|");
+        if (!privados[key]) privados[key] = [];
+        privados[key].push({ id:++msgIdCounter, from:u.nick, texto:"", fecha:Date.now(), tipo:"archivo", nombre:b.nombre, mime:b.mime, datos:b.datos });
+        if (privados[key].length > 100) privados[key] = privados[key].slice(-50);
+
+        jsonRes(res, 200, { ok:true });
+      }).catch(function() { jsonRes(res, 500, { error:"Error del servidor." }); });
+      return;
+    }
+
+    // GET /api/priv/messages?con=NICK&since=0&token=T
+    if (ruta === "/api/priv/messages" && req.method === "GET") {
+      var token = params.token;
+      if (!token || !usuarios[token]) return jsonRes(res, 401, { error:"Sesión inválida." });
+      var u = usuarios[token];
+      var con = (params.con || "").trim();
+      var since = parseInt(params.since || "0", 10);
+      if (!con) return jsonRes(res, 400, { error:"Falta parámetro 'con'." });
+
+      var key = [u.nick, con].sort().join("|");
+      var msgs = privados[key] || [];
+      var filtrados = since ? msgs.filter(function(m) { return m.id > since; }) : msgs.slice(-50);
+      jsonRes(res, 200, { messages:filtrados, lastId:msgIdCounter });
+      return;
+    }
+
+    // GET /api/users?sala=X&token=T
+    if (ruta === "/api/users" && req.method === "GET") {
+      var token = params.token;
+      var sala = params.sala || "cali";
+      if (!token || !usuarios[token]) return jsonRes(res, 401, { error:"Sesión inválida." });
+      usuarios[token].visto = Date.now();
+      jsonRes(res, 200, { users:usuariosEnSala(sala) });
+      return;
+    }
+
+    // GET /api/userinfo?token=T
+    if (ruta === "/api/userinfo" && req.method === "GET") {
+      var token = params.token;
+      if (!token || !usuarios[token]) return jsonRes(res, 401, { error:"Sesión inválida." });
+      var u = usuarios[token];
+      var r = rolDe(u.nick);
+      var pts = (usuariosPuntos[u.nick] || {}).puntos || 0;
+      jsonRes(res, 200, { nick:u.nick, rol:r.nombre, rolLabel:r.label, puntos:pts, esMod:esMod(u.nick) });
+      return;
+    }
+
+    // POST /api/leave
+    if (ruta === "/api/leave" && req.method === "POST") {
+      parseBody(req).then(function(b) {
+        var token = b.token || params.token;
+        if (token && usuarios[token]) {
+          var u = usuarios[token];
+          agregarMensaje(u.sala, { tipo:"sys", texto:"👋 " + u.nick + " salió del Parche", nick:"" });
+          delete nickTokens[u.nick];
+          delete usuarios[token];
+        }
+        jsonRes(res, 200, { ok:true });
+      }).catch(function() { jsonRes(res, 200, { ok:true }); });
+      return;
+    }
+
+    // POST /api/mod?token=T
+    if (ruta === "/api/mod" && req.method === "POST") {
+      var token = params.token;
+      if (!token || !usuarios[token]) return jsonRes(res, 401, { error:"Sesión inválida." });
+      var u = usuarios[token];
+      if (!esMod(u.nick)) return jsonRes(res, 403, { error:"No eres moderador." });
+
+      parseBody(req).then(function(b) {
+        var para = String(b.para || "").trim();
+        if (!para) return jsonRes(res, 400, { error:"Falta destino." });
+
+        var targetToken = nickTokens[para];
+
+        switch(b.accion) {
+          case "kick":
+            if (targetToken && usuarios[targetToken]) {
+              var ts = usuarios[targetToken].sala;
+              agregarMensaje(ts, { tipo:"sys", texto:"🚫 " + para + " fue expulsado por " + u.nick, nick:"" });
+              delete nickTokens[para];
+              delete usuarios[targetToken];
+            }
+            break;
+          case "ban":
+            var hrs = Math.max(1, parseInt(b.horas, 10) || 2);
+            banes.set(para, { hasta:Date.now() + hrs * 3600000 });
+            if (targetToken && usuarios[targetToken]) {
+              var ts2 = usuarios[targetToken].sala;
+              agregarMensaje(ts2, { tipo:"sys", texto:"🚫 " + para + " baneado " + hrs + "h por " + u.nick, nick:"" });
+              delete nickTokens[para];
+              delete usuarios[targetToken];
+            }
+            break;
+          case "mute":
+            var mins = Math.max(1, parseInt(b.minutos, 10) || 5);
+            mutes.set(para, { hasta:Date.now() + mins * 60000 });
+            jsonRes(res, 200, { ok:true, texto:"🔇 " + para + " silenciado " + mins + " min." });
+            return;
+          case "unmute":
+            mutes.delete(para);
+            jsonRes(res, 200, { ok:true, texto:"✅ " + para + " ya puede hablar." });
+            return;
+          case "mod":
+            mods.add(para);
+            jsonRes(res, 200, { ok:true, texto:"🎖️ " + para + " ahora es moderador." });
+            return;
+        }
+        jsonRes(res, 200, { ok:true });
+      }).catch(function() { jsonRes(res, 500, { error:"Error del servidor." }); });
+      return;
+    }
+
+    jsonRes(res, 404, { error:"Endpoint no encontrado." });
+    return;
   }
 
-  fs.readFile(archivo, (err, data) => {
+  // === Archivos estáticos ===
+  var raiz = path.resolve(PUBLIC);
+  var archivo = path.join(raiz, ruta);
+  if (archivo.indexOf(raiz) !== 0) { res.writeHead(403); res.end("Prohibido"); return; }
+  if (/^[\\/](node_modules|server|\.git)[\\/]/.test(ruta)) { res.writeHead(404); res.end("No existe."); return; }
+
+  fs.readFile(archivo, function(err, data) {
     if (err) {
-      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      res.writeHead(404, {"Content-Type":"text/plain; charset=utf-8"});
       res.end("404: Ese parche no existe, parce.");
       return;
     }
-    const ext = path.extname(archivo).slice(1);
-    res.writeHead(200, { "Content-Type": TIPOS[ext] || "application/octet-stream" });
+    var ext = path.extname(archivo).slice(1);
+    res.writeHead(200, {"Content-Type": TIPOS[ext] || "application/octet-stream"});
     res.end(data);
   });
 });
 
-// ===== WebSocket =====
-const wss = new WebSocketServer({ server: servidor, path: "/ws", maxPayload: 16 * 1024 * 1024 });
-
-function salaValida(nombre) { return Object.prototype.hasOwnProperty.call(SALAS, nombre); }
-
-function apodoValido(nick) {
-  if (!nick) return false;
-  const n = nick.trim();
-  // Como DaleChat: letras, números, guion bajo y guion medio (más acentos/ñ)
-  return n.length >= 2 && n.length <= MAX_NICK && /^[A-Za-z0-9_\-.áéíóúüñÁÉÍÓÚÜÑ]+$/.test(n);
-}
-
-function archivoValido(m) {
-  if (typeof m.nombre !== "string" || typeof m.mime !== "string") return false;
-  if (typeof m.datos !== "string" || !/^data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,/i.test(m.datos)) return false;
-  if (m.datos.length > MAX_DATOS) return false;
-  if (m.nombre.length > 120) return false;
-  return true;
-}
-
-wss.on("connection", (ws) => {
-  ws.sala = null;
-  ws.nick = null;
-
-  ws.on("message", (buf) => {
-    let m;
-    try { m = JSON.parse(buf.toString()); } catch (e) { return; }
-
-    if (m.t === "join") {
-      if (!apodoValido(m.nick) || !salaValida(m.sala)) {
-        ws.send(mensaje({ t: "sys", texto: "Apodo o sala inválidos." }));
-        ws.close();
-        return;
-      }
-      const nick = m.nick.trim();
-      const baneo = estaBaneado(nick);
-      if (baneo) {
-        ws.send(mensaje({ t: "sys", texto: "🚫 Estás expulsado del Parche. Vuelve en " + horasRestantes(baneo.hasta) + " hora(s). Expulsiones: " + totalExpulsiones(nick) + "." }));
-        ws.close();
-        return;
-      }
-      ws.nick = nick;
-      ws.sala = m.sala;
-      ws.avatar = (typeof m.avatar === "string" && m.avatar.trim()) ? m.avatar.trim().slice(0, 8) : "🙂";
-      ws.color = /^#[0-9a-f]{6}$/i.test(m.color || "") ? m.color : "#1a1a2e";
-
-      let repetido = false;
-      salas[ws.sala].forEach(c => { if (c !== ws && c.nick === ws.nick) repetido = true; });
-      if (repetido || (conexiones[ws.nick] && conexiones[ws.nick] !== ws)) {
-        ws.send(mensaje({ t: "sys", texto: "Ese apodo ya está en el Parche. Elige otro, parce." }));
-        ws.close();
-        return;
-      }
-
-      if (conexiones[ws.nick]) {
-        const viejo = conexiones[ws.nick];
-        if (viejo.sala === ws.sala) salas[ws.sala].delete(viejo);
-        difundir(viejo.sala, { t: "sys", texto: "👋 " + ws.nick + " salió del Parche" });
-        notificarUsuarios(viejo.sala);
-        viejo.close();
-      }
-      conexiones[ws.nick] = ws;
-
-      salas[ws.sala].add(ws);
-      difundir(ws.sala, { t: "sys", texto: "🎉 " + ws.nick + " entró al Parche de Cali" });
-      notificarUsuarios(ws.sala);
-      // El primer usuario en llegar se vuelve moderador automáticamente
-      if (mods.size === 0 && !esMod(ws.nick)) {
-        mods.add(ws.nick);
-        ws.send(mensaje({ t: "rol", esMod: true }));
-        ws.send(mensaje({ t: "sys", texto: "🛡️ Eres el primer caleño en el Parche: quedaste como moderador. Toca 🛡️ junto a un usuario para expulsar, silenciar o banear." }));
-      } else {
-        ws.send(mensaje({ t: "rol", esMod: esMod(ws.nick) }));
-      }
-      ws.send(mensaje({ t: "sys", texto: "Bienvenido a " + SALAS[ws.sala] + ", " + ws.nick + ". ¡Buena vibra!" }));
-    }
-
-    else if (m.t === "msg" && ws.sala && ws.nick) {
-      if (estaMuteado(ws.nick)) {
-        ws.send(mensaje({ t: "sys", texto: "🔇 Estás silenciado(a) por un moderador." }));
-        return;
-      }
-      const texto = String(m.texto || "").trim().slice(0, MAX_MSG);
-      if (!texto) return;
-      if (tieneOfensiva(texto)) {
-        const inf = registrarInfraccion(ws.nick);
-        const aviso = inf.expulsiones === 1
-          ? "🚫 Advertencia por lenguaje ofensivo. Es tu 1ª. A la 2ª quedas expulsado 2 horas."
-          : "🚫 Expulsado " + horasRestantes(banes.get(ws.nick).hasta) + " hora(s) por lenguaje ofensivo. Expulsión #" + inf.expulsiones + ".";
-        ws.send(mensaje({ t: "sys", texto: aviso }));
-        setTimeout(() => { ws.close(4001, "ofensiva"); }, 400);
-        return;
-      }
-      difundir(ws.sala, { t: "msg", nick: ws.nick, avatar: ws.avatar, color: ws.color, texto: texto });
-    }
-
-    else if (m.t === "archivo" && ws.sala && ws.nick) {
-      if (estaMuteado(ws.nick)) {
-        ws.send(mensaje({ t: "sys", texto: "🔇 Estás silenciado(a) por un moderador." }));
-        return;
-      }
-      if (!archivoValido(m)) {
-        ws.send(mensaje({ t: "sys", texto: "Archivo demasiado grande o inválido (máx. 6 MB)." }));
-        return;
-      }
-      difundir(ws.sala, { t: "archivo", de: ws.nick, avatar: ws.avatar, color: ws.color, nombre: m.nombre, mime: m.mime, datos: m.datos });
-    }
-
-    else if (m.t === "priv" && ws.sala && ws.nick) {
-      const para = String(m.para || "").trim();
-      const texto = String(m.texto || "").trim().slice(0, MAX_MSG);
-      if (!texto || !para || para === ws.nick) return;
-      const dest = conexiones[para];
-      if (!dest || dest.readyState !== WebSocket.OPEN) {
-        ws.send(mensaje({ t: "sys", texto: "🙁 " + para + " no está conectado(a) en este momento." }));
-        return;
-      }
-      enviarA(para, { t: "priv", de: ws.nick, avatar: ws.avatar, color: ws.color, texto: texto });
-      ws.send(mensaje({ t: "priv", de: ws.nick, avatar: ws.avatar, color: ws.color, texto: texto, propio: true }));
-    }
-
-    else if (m.t === "privArchivo" && ws.sala && ws.nick) {
-      const para = String(m.para || "").trim();
-      if (!para || para === ws.nick) return;
-      if (!archivoValido(m)) {
-        ws.send(mensaje({ t: "sys", texto: "Archivo demasiado grande o inválido (máx. 6 MB)." }));
-        return;
-      }
-      const dest = conexiones[para];
-      if (!dest || dest.readyState !== WebSocket.OPEN) {
-        ws.send(mensaje({ t: "sys", texto: "🙁 " + para + " no está conectado(a) en este momento." }));
-        return;
-      }
-      enviarA(para, { t: "privArchivo", de: ws.nick, avatar: ws.avatar, color: ws.color, nombre: m.nombre, mime: m.mime, datos: m.datos });
-      ws.send(mensaje({ t: "privArchivo", de: ws.nick, avatar: ws.avatar, color: ws.color, nombre: m.nombre, mime: m.mime, datos: m.datos, propio: true }));
-    }
-
-    // ===== Video en vivo =====
-    else if (m.t === "videoOn" && ws.sala && ws.nick) {
-      videos[ws.sala].set(ws.nick, ws);
-      difundir(ws.sala, { t: "videoOn", de: ws.nick });
-      // Enviar la lista de videos ya activos al nuevo
-      const activos = [];
-      videos[ws.sala].forEach((v, nick) => { if (nick !== ws.nick) activos.push(nick); });
-      if (activos.length) ws.send(mensaje({ t: "videoLista", lista: activos }));
-    }
-
-    else if (m.t === "videoOff" && ws.sala && ws.nick) {
-      videos[ws.sala].delete(ws.nick);
-      difundir(ws.sala, { t: "videoOff", de: ws.nick });
-    }
-
-    else if (m.t === "videoFrame" && ws.sala && ws.nick) {
-      if (typeof m.datos === "string" && m.datos.length < 400000) {
-        const datos = mensaje({ t: "videoFrame", de: ws.nick, datos: m.datos });
-        salas[ws.sala].forEach(c => {
-          if (c !== ws && c.readyState === WebSocket.OPEN) c.send(datos);
-        });
-      }
-    }
-
-    // ===== Moderación =====
-    else if (m.t === "report" && ws.sala && ws.nick) {
-      const para = String(m.para || "").trim();
-      if (!para || para === ws.nick) return;
-      // Avisar a todos los moderadores conectados
-      Object.keys(conexiones).forEach(function (nick) {
-        if (esMod(nick)) {
-          const modWs = conexiones[nick];
-          if (modWs && modWs.readyState === WebSocket.OPEN) {
-            modWs.send(mensaje({ t: "report", de: ws.nick, para: para }));
-          }
-        }
-      });
-    }
-
-    else if (m.t === "mod" && ws.sala && ws.nick) {
-      if (!esMod(ws.nick)) {
-        ws.send(mensaje({ t: "sys", texto: "No tienes permisos de moderación." }));
-        return;
-      }
-      const para = String(m.para || "").trim();
-      const objetivo = conexiones[para];
-      switch (m.accion) {
-        case "kick":
-          if (objetivo) {
-            objetivo.send(mensaje({ t: "sys", texto: "🚫 Fuiste expulsado(a) por un moderador (" + ws.nick + ")." }));
-            setTimeout(() => objetivo.close(4001, "kick"), 400);
-          }
-          break;
-        case "ban":
-          {
-            const horas = Math.max(1, parseInt(m.horas, 10) || 2);
-            banes.set(para, { hasta: Date.now() + horas * 3600000 });
-            if (objetivo) {
-              objetivo.send(mensaje({ t: "sys", texto: "🚫 Baneado(a) " + horas + " hora(s) por " + ws.nick + "." }));
-              setTimeout(() => objetivo.close(4002, "ban"), 400);
-            }
-          }
-          break;
-        case "mute":
-          {
-            const mins = Math.max(1, parseInt(m.minutos, 10) || 5);
-            mutes.set(para, { hasta: Date.now() + mins * 60000 });
-            if (objetivo) objetivo.send(mensaje({ t: "sys", texto: "🔇 Silenciado(a) " + mins + " min por " + ws.nick + "." }));
-            ws.send(mensaje({ t: "sys", texto: "🔇 Silenciaste a " + para + " por " + mins + " min." }));
-          }
-          break;
-        case "unmute":
-          mutes.delete(para);
-          if (objetivo) objetivo.send(mensaje({ t: "sys", texto: "✅ Ya puedes hablar de nuevo." }));
-          break;
-        case "mod":
-          mods.add(para);
-          if (objetivo) objetivo.send(mensaje({ t: "rol", esMod: true }));
-          enviarA(para, { t: "sys", texto: "🎖️ " + ws.nick + " te dio permisos de moderación." });
-          break;
-        default:
-          break;
-      }
+// ===== Limpieza y puntos periódicos =====
+setInterval(function() {
+  var ahora = Date.now();
+  Object.keys(usuarios).forEach(function(token) {
+    var u = usuarios[token];
+    if (ahora - u.visto > LIMITE_SILENCIO) {
+      agregarMensaje(u.sala, { tipo:"sys", texto:"👋 " + u.nick + " salió del Parche (inactividad)", nick:"" });
+      delete nickTokens[u.nick];
+      delete usuarios[token];
     }
   });
+  // Bonus de puntos
+  Object.keys(usuarios).forEach(function(token) {
+    var u = usuarios[token];
+    var r = sumarPuntos(u.nick, PUNTOS_POR_INTERVALO);
+    if (r.subio) {
+      agregarMensaje(u.sala, { tipo:"sys", texto:"🎉 ¡" + u.nick + " alcanzó el rango de " + r.rolNuevo.label + "! 🏆", nick:"" });
+    }
+  });
+}, 5 * 60 * 1000);
 
-  ws.on("close", () => { desconectar(ws); });
-});
-
-servidor.listen(PUERTO, () => {
+servidor.listen(PUERTO, function() {
   console.log("💃 El Parche de Cali corriendo en http://localhost:" + PUERTO);
+  console.log("🛡️ Sistema de roles activo: Nuevo → Activo → Veterano → Leyenda");
 });

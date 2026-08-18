@@ -1,108 +1,67 @@
-/* ===== El Parche de Cali · cliente de chat ===== */
+/* ===== El Parche de Cali · Cliente AJAX ===== */
 (function () {
   "use strict";
 
   var PARAMS = new URLSearchParams(location.search);
   var NICK = (PARAMS.get("nick") || localStorage.getItem("parcheNick") || "").trim().slice(0, 24);
   var SALA = (PARAMS.get("sala") || localStorage.getItem("parcheSala") || "cali").trim();
-  var MI_AVATAR = (PARAMS.get("avatar") || localStorage.getItem("parcheAvatar") || "🙂").slice(0, 8);
-  var MI_COLOR = /^#[0-9a-f]{6}$/i.test(localStorage.getItem("parcheColor") || "") ? localStorage.getItem("parcheColor") : "#007a4d";
+  var GENERO = (PARAMS.get("genero") || "").trim();
+  var MI_AVATAR = "🙂";
+  var MI_COLOR = "#007a4d";
+  var TOKEN = null;
+  var SOY_MOD = false;
+  var MI_ROL = "nuevo";
+  var MIS_PUNTOS = 0;
+
   var SALAS_TITULO = {
-    cali: "#Cali · Principal", salsa: "#Salsa", rumba: "#Rumba",
-    colombia: "#Colombia", general: "#General", amistad: "#Amistad"
+    cali:"#Cali · Principal", salsa:"#Salsa", rumba:"#Rumba",
+    colombia:"#Colombia", general:"#General", amistad:"#Amistad"
   };
 
-  var servidor = (function () {
-    var config = (window.PARCHE_CONFIG || {});
-    if (config.wsUrl) return config.wsUrl;
-    var proto = (location.protocol === "https:") ? "wss:" : "ws:";
-    return proto + "//" + location.host + "/ws";
-  })();
+  var lastMsgId = 0;
+  var lastPrivMsgId = 0;
+  var polling = null;
+  var userPolling = null;
 
-  var colores = ["#e3222a", "#007a4d", "#1a4fd8", "#c000a0", "#b45309", "#0e7490", "#7c3aed", "#db2777"];
-  var mapaColor = {};
-  var socket = null;
-  var conectado = false;
-  var usuarios = [];
+  var $ = function(id) { return document.getElementById(id); };
+  var mensajesEl = $("mensajes");
+  var input = $("msg-input");
+  var btnSend = $("btn-send");
+  var form = $("msg-form");
+  var chipUsers = $("chip-users");
+  var listUsers = $("list-users");
+  var panelUsers = $("panel-users");
 
-  var $ = function (id) { return document.getElementById(id); };
-  var mensajes = $("mensajes");
-  var listaUsuarios = $("lista-usuarios");
-  var input = $("mensaje-input");
-  var btnEnviar = $("btn-enviar");
-  var chip = $("chip-conectados");
-  var form = $("form-mensaje");
+  // Private chat
+  var privadoCon = null;
+  var privados = {};
+  var privBar = $("priv-bar");
+  var privTitle = $("priv-title");
+  var privBack = $("priv-back");
 
-  // Chat privado
-  var privadoCon = null;            // nick del privado activo o null
-  var privados = {};                // nick -> {msgs:[], noLeidos:0}
-  var privadoBorra = $("privado-barra");
-  var privadoTitulo = $("privado-titulo");
-  var privadoVolver = $("privado-volver");
-  var btnUsuarios = $("btn-usuarios");
-  var btnCerrarUsuarios = $("btn-cerrar-usuarios");
-  var panelUsuarios = $("panel-usuarios");
+  // Archivo
+  var fileInput = $("file-input");
+  var adjuntoBar = $("adjunto-bar");
+  var adjuntoName = $("adjunto-name");
+  var adjuntoRemove = $("adjunto-remove");
+  var archivoSeleccionado = null;
 
-  // Moderación
-  var soyMod = false;
-
-  // Video en vivo
-  var videosPanel = $("videos-panel");
-  var videosGrid = $("videos-grid");
-  var videosCerrar = $("videos-cerrar");
-  var btnCam = $("btn-cam");
-  var btnFoto = $("btn-foto");
-  var camaraActiva = false;
-  var streamCamara = null;
-  var videoLocal = null;
-  var canvasOculto = null;
-  var intervaloVideo = null;
-  var videosRemotos = {};           // nick -> {video, img, canvas, ctx}
-  var calidadVideo = 12;            // JPEG calidad
-
-  // Archivos
-  var archivoInput = $("archivo-input");
-  var adjuntoVista = $("adjunto-vista");
-  var adjuntoNombre = $("adjunto-nombre");
-  var adjuntoQuitar = $("adjunto-quitar");
-  var archivoSeleccionado = null;   // {nombre, mime, datos(base64)}
-
-  // Emoji picker
+  // Emoji
   var btnEmoji = $("btn-emoji");
   var emojiPanel = $("emoji-panel");
 
-  // Videollamada
-  var btnVideollamada = $("btn-videollamada");
-  var videoLlamadaPanel = $("videollamada-panel");
-  var videoLlamadaMarco = $("videollamada-marco");
-  var videoLlamadaCon = $("videollamada-con");
-  var videoLlamadaCerrar = $("videollamada-cerrar");
-  var llamadaAbierta = false;
-
-  // Detalles de usuarios (avatar, color)
-  var detalles = {};                // nick -> {avatar, color, esMod}
-
   if (!NICK) { location.href = "index.html"; return; }
-  $("sala-titulo").textContent = SALAS_TITULO[SALA] || ("#" + SALA);
+  $("sala-label").textContent = SALAS_TITULO[SALA] || ("#" + SALA);
   document.title = (SALAS_TITULO[SALA] || ("#" + SALA)) + " · El Parche de Cali";
 
+  // Guardar preferencias
+  localStorage.setItem("parcheNick", NICK);
+  localStorage.setItem("parcheSala", SALA);
+
   function esc(t) {
-    return t.replace(/[&<>"']/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    return t.replace(/[&<>"']/g, function(c) {
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
     });
-  }
-
-  function colorDe(nick) {
-    if (detalles[nick] && detalles[nick].color) return detalles[nick].color;
-    if (!mapaColor[nick]) {
-      mapaColor[nick] = colores[Object.keys(mapaColor).length % colores.length];
-    }
-    return mapaColor[nick];
-  }
-
-  function avatarDe(nick) {
-    if (detalles[nick] && detalles[nick].avatar) return detalles[nick].avatar;
-    return "🙂";
   }
 
   function hora() {
@@ -111,62 +70,79 @@
     return p(d.getHours()) + ":" + p(d.getMinutes());
   }
 
-  function soyYo(nick) { return nick === NICK; }
+  // ===== API helpers =====
+  function apiGet(url, cb) {
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", url, true);
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4) {
+        try { cb(null, JSON.parse(xhr.responseText)); }
+        catch(e) { cb(e, null); }
+      }
+    };
+    xhr.send();
+  }
+
+  function apiPost(url, data, cb) {
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4) {
+        try { cb(null, JSON.parse(xhr.responseText)); }
+        catch(e) { cb(e, null); }
+      }
+    };
+    xhr.send(JSON.stringify(data));
+  }
 
   // ===== Render de mensajes =====
-  // msg: {tipo:"sistema"|"msg"|"archivo"|"priv"|"privArchivo",
-  //       nick, texto, propio, privado, nombre, mime, datos}
   function anadirMensaje(msg) {
     var div = document.createElement("div");
     var texto = msg.texto || "";
 
-    if (msg.tipo === "sistema") {
+    if (msg.tipo === "sys") {
       div.className = "mensaje sistema";
       div.textContent = texto;
     } else {
-      if (msg.privado) div.className = "mensaje privado";
+      div.className = "mensaje";
       if (msg.propio) div.className += " propio";
 
       var n = document.createElement("span");
       n.className = "nick";
       var av = document.createElement("span");
       av.className = "avatar-mini";
-      av.textContent = avatarDe(msg.nick);
+      av.textContent = msg.avatar || "🙂";
       n.appendChild(av);
       n.appendChild(document.createTextNode(msg.nick));
-      n.style.color = colorDe(msg.nick);
+      n.style.color = msg.color || "#333";
+      n.appendChild(crearBadge(msg.rol || "nuevo", msg.esMod));
       div.appendChild(n);
 
-      if (msg.tipo === "archivo" || msg.tipo === "privArchivo") {
+      if (msg.tipo === "archivo") {
         var arch = document.createElement("div");
-        arch.className = "archivo";
-        var archivoSel = document.createElement("div");
-        archivoSel.className = "archivo-sel";
+        arch.className = "texto";
         if (msg.datos && msg.datos.indexOf("image/") !== -1) {
-          var img = document.createElement("a");
-          img.href = msg.datos;
-          img.target = "_blank";
-          img.rel = "noopener";
-          img.innerHTML = "<img src='" + esc(msg.datos) + "' alt='Foto'>";
-          archivoSel.appendChild(img);
+          arch.className += " archivo-img";
+          var img = document.createElement("img");
+          img.src = msg.datos;
+          img.alt = msg.nombre || "Foto";
+          arch.appendChild(img);
         } else if (msg.datos && msg.datos.indexOf("video/") !== -1) {
+          arch.className += " archivo-vid";
           var v = document.createElement("video");
           v.src = msg.datos;
           v.controls = true;
           v.preload = "metadata";
-          archivoSel.appendChild(v);
+          arch.appendChild(v);
         } else {
-          var enlace = document.createElement("a");
-          enlace.href = msg.datos;
-          enlace.download = msg.nombre || "archivo";
-          enlace.textContent = "⬇ " + (msg.nombre || "Descargar");
-          archivoSel.appendChild(enlace);
+          var a = document.createElement("a");
+          a.href = msg.datos;
+          a.download = msg.nombre || "archivo";
+          a.className = "archivo-link";
+          a.textContent = "⬇ " + (msg.nombre || "Descargar");
+          arch.appendChild(a);
         }
-        arch.appendChild(archivoSel);
-        var etiqueta = document.createElement("span");
-        etiqueta.className = "archivo-nombre";
-        etiqueta.textContent = msg.nombre || "";
-        arch.appendChild(etiqueta);
         div.appendChild(arch);
       } else {
         var t = document.createElement("span");
@@ -181,576 +157,398 @@
       if (msg.privado) time.textContent = "🔒 " + hora();
       div.appendChild(time);
     }
-    mensajes.appendChild(div);
-    mensajes.scrollTop = mensajes.scrollHeight;
+
+    mensajesEl.appendChild(div);
+    mensajesEl.scrollTop = mensajesEl.scrollHeight;
+  }
+
+  function crearBadge(rol, esMod) {
+    var span = document.createElement("span");
+    var r = esMod ? "mod" : (rol || "nuevo");
+    span.className = "badge badge-" + r;
+    var labels = {nuevo:"Nuevo",activo:"Activo",veterano:"Veterano",leyenda:"Leyenda",mod:"Mod"};
+    span.textContent = labels[r] || "Nuevo";
+    return span;
   }
 
   // ===== Chat privado =====
-  function privadoExiste(nick) {
-    return privados[nick] && privados[nick].msgs && privados[nick].msgs.length > 0;
-  }
-
   function abrirPrivado(nick) {
     if (!nick || nick === NICK) return;
     privadoCon = nick;
-    if (!privados[nick]) privados[nick] = { msgs: [], noLeidos: 0 };
-    privados[nick].noLeidos = 0;
+    if (!privados[nick]) privados[nick] = {msgs:[], lastId:0};
+    lastPrivMsgId = privados[nick].lastId || 0;
 
-    privadoBorra.classList.remove("oculto");
-    privadoTitulo.textContent = "Privado con " + nick;
-    document.body.classList.add("en-privado");
+    privBar.classList.remove("hidden");
+    privTitle.textContent = "🔒 Privado con " + nick;
 
-    // Limpiar y pintar solo esa conversación
-    mensajes.innerHTML = "";
+    mensajesEl.innerHTML = "";
     var intro = document.createElement("div");
     intro.className = "mensaje sistema";
-    intro.textContent = "🔒 Chat privado con " + nick + ". Solo ustedes dos ven estos mensajes.";
-    mensajes.appendChild(intro);
-    privados[nick].msgs.forEach(function (msg) { anadirMensaje(msg); });
-    mensajes.scrollTop = mensajes.scrollHeight;
-    cerrarUsuariosMovil();
+    intro.textContent = "🔒 Chat privado con " + nick;
+    mensajesEl.appendChild(intro);
+    privados[nick].msgs.forEach(function(m) { anadirMensaje(m); });
     input.focus();
+    cerrarUsuarios();
   }
 
   function cerrarPrivado() {
     privadoCon = null;
-    privadoBorra.classList.add("oculto");
-    document.body.classList.remove("en-privado");
-    mensajes.innerHTML = "";
-    var sis = document.createElement("div");
-    sis.className = "mensaje sistema";
-    sis.textContent = "Volviste a #" + SALA;
-    mensajes.appendChild(sis);
-    mensajes.scrollTop = mensajes.scrollHeight;
+    lastPrivMsgId = 0;
+    privBar.classList.add("hidden");
+    mensajesEl.innerHTML = "";
+    lastMsgId = 0;
+    cargarMensajes();
     input.focus();
   }
 
-  function pintarMensajePrivado(msg) {
-    var nick = msg.propio ? msg.de : msg.de;
-    var destino = msg.propio ? msg.de : msg.de;
-    var clave = destino;
-    if (!privados[clave]) privados[clave] = { msgs: [], noLeidos: 0 };
+  function pintarPrivMsg(msg) {
+    var nick = msg.from;
+    var key = [NICK, nick].sort().join("|");
+    if (!privados[nick]) privados[nick] = {msgs:[], lastId:0};
     var obj = {
-      tipo: msg.t === "privArchivo" ? "privArchivo" : "priv",
-      nick: nick, texto: msg.texto || "",
-      propio: !!msg.propio, privado: true,
-      nombre: msg.nombre || "", mime: msg.mime || "", datos: msg.datos || ""
+      tipo: msg.tipo === "archivo" ? "archivo" : "msg",
+      nick: nick,
+      texto: msg.texto || "",
+      propio: msg.from === NICK,
+      privado: true,
+      nombre: msg.nombre || "",
+      mime: msg.mime || "",
+      datos: msg.datos || "",
+      color: "#333",
+      avatar: "🙂",
+      rol: "nuevo"
     };
-    if (msg.avatar) { if (!detalles[nick]) detalles[nick] = {}; detalles[nick].avatar = msg.avatar; }
-    if (msg.color) { if (!detalles[nick]) detalles[nick] = {}; detalles[nick].color = msg.color; }
-    privados[clave].msgs.push(obj);
-    if (privadoCon === clave) {
-      anadirMensaje(obj);
-    } else if (!msg.propio) {
-      privados[clave].noLeidos++;
-      pintarNoLeidos(clave);
-      if (!document.hidden) {
-        try { new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=").play(); } catch (e) {}
-      }
-    }
-  }
+    privados[nick].msgs.push(obj);
+    privados[nick].lastId = msg.id;
 
-  function pintarNoLeidos(nick) {
-    var lis = listaUsuarios.querySelectorAll("li");
-    for (var i = 0; i < lis.length; i++) {
-      if (lis[i].getAttribute("data-nick") === nick) {
-        var b = lis[i].querySelector(".no-leidos");
-        if (b) b.textContent = privados[nick].noLeidos;
-        break;
+    if (privadoCon === nick) {
+      anadirMensaje(obj);
+      lastPrivMsgId = msg.id;
+    } else if (msg.from !== NICK) {
+      // Notificación sonora
+      if (!document.hidden) {
+        try { new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=").play(); } catch(e) {}
       }
     }
   }
 
   // ===== Usuarios =====
-  function renderUsuarios() {
-    listaUsuarios.innerHTML = "";
-    if (!usuarios.length) {
-      var li = document.createElement("li");
-      li.className = "estado";
-      li.textContent = "Nadie por ahora. ¡Sé el primero!";
-      listaUsuarios.appendChild(li);
+  function renderUsuarios(lista) {
+    listUsers.innerHTML = "";
+    if (!lista.length) {
+      var div = document.createElement("div");
+      div.style.cssText = "padding:12px;color:#888;text-align:center";
+      div.textContent = "Nadie por ahora. ¡Sé el primero!";
+      listUsers.appendChild(div);
     } else {
-      usuarios.slice().sort(function (a, b) { return a.localeCompare(b); }).forEach(function (u) {
-        var li = document.createElement("li");
-        li.setAttribute("data-nick", u);
-        var av = document.createElement("span");
-        av.className = "avatar-lista";
-        av.textContent = avatarDe(u);
-        li.appendChild(av);
+      lista.sort(function(a,b) { return a.nick.localeCompare(b.nick); }).forEach(function(u) {
+        var item = document.createElement("div");
+        item.className = "usuario-item" + (u.nick === NICK ? " yo" : "");
+
         var dot = document.createElement("span");
         dot.className = "dot";
-        dot.style.color = colorDe(u);
-        li.appendChild(dot);
+        dot.style.background = u.color || "#333";
+        item.appendChild(dot);
+
         var nombre = document.createElement("span");
-        nombre.className = "usuario-nombre";
-        nombre.textContent = u;
-        nombre.style.color = colorDe(u);
-        li.appendChild(nombre);
-        if (u !== NICK) {
-          var candado = document.createElement("button");
-          candado.type = "button";
-          candado.className = "btn-candado";
-          candado.title = "Hablar en privado";
-          candado.textContent = "🔒";
-          candado.addEventListener("click", function (e) {
-            e.stopPropagation();
-            abrirPrivado(u);
-          });
-          li.appendChild(candado);
-          var menu = document.createElement("button");
-          menu.type = "button";
-          menu.className = "btn-menu";
-          menu.title = soyMod ? "Moderar" : "Reportar";
-          menu.textContent = soyMod ? "🛡️" : "🚩";
-          menu.addEventListener("click", function (e) {
-            e.stopPropagation();
-            preguntarMod(u);
-          });
-          li.appendChild(menu);
-          li.addEventListener("click", function () { preguntarMod(u); });
-        } else {
-          li.className += " yo";
+        nombre.className = "nombre";
+        nombre.textContent = u.avatar + " " + u.nick;
+        nombre.style.color = u.color || "#333";
+        item.appendChild(nombre);
+
+        item.appendChild(crearBadge(u.rol, u.esMod));
+
+        if (privados[u.nick] && privados[u.nick].noLeidos > 0) {
+          var badge = document.createElement("span");
+          badge.className = "no-leidos";
+          badge.textContent = privados[u.nick].noLeidos;
+          item.appendChild(badge);
         }
-        if (privados[u] && privados[u].noLeidos > 0) {
-          var b = document.createElement("span");
-          b.className = "no-leidos";
-          b.textContent = privados[u].noLeidos;
-          li.appendChild(b);
+
+        if (u.nick !== NICK) {
+          item.addEventListener("click", function() {
+            var acc = SOY_MOD
+              ? prompt("Acción con " + u.nick + ":\n1. Expulsar\n2. Silenciar\n3. Banear\n4. Hacer moderador\n5. Chat privado", "5")
+              : prompt("Acción con " + u.nick + ":\n1. Chat privado\n2. Reportar", "1");
+            if (!acc) return;
+            var idx = parseInt(acc, 10);
+            if (SOY_MOD) {
+              if (idx === 1) accionMod(u.nick, "kick");
+              else if (idx === 2) {
+                var mins = parseInt(prompt("Minutos de silencio:", "5"), 10);
+                if (mins) accionMod(u.nick, "mute", {minutos:mins});
+              } else if (idx === 3) {
+                var hrs = parseInt(prompt("Horas de baneo:", "2"), 10);
+                if (hrs) accionMod(u.nick, "ban", {horas:hrs});
+              } else if (idx === 4) accionMod(u.nick, "mod");
+              else if (idx === 5) abrirPrivado(u.nick);
+            } else {
+              if (idx === 1) abrirPrivado(u.nick);
+            }
+          });
         }
-        listaUsuarios.appendChild(li);
+
+        listUsers.appendChild(item);
       });
     }
-    chip.textContent = "👥 " + usuarios.length + " conectado" + (usuarios.length === 1 ? "" : "s");
+    chipUsers.textContent = "👥 " + lista.length + " conectado" + (lista.length === 1 ? "" : "s");
   }
 
-  // ===== Móvil: panel de usuarios =====
-  function abrirUsuariosMovil() { panelUsuarios.classList.add("abierto"); }
-  function cerrarUsuariosMovil() { panelUsuarios.classList.remove("abierto"); }
+  // ===== Moderación =====
+  function accionMod(u, accion, extra) {
+    var data = {para:u, accion:accion};
+    if (extra) Object.keys(extra).forEach(function(k) { data[k] = extra[k]; });
+    apiPost("/api/mod?token=" + TOKEN, data, function(err, res) {
+      if (res && res.ok && res.texto) {
+        anadirMensaje({tipo:"sys", texto:res.texto});
+      }
+    });
+  }
+
+  // ===== Móvil =====
+  function cerrarUsuarios() { panelUsers.classList.remove("abierto"); }
+  $("btn-toggle-users").addEventListener("click", function() {
+    panelUsers.classList.toggle("abierto");
+  });
+  $("btn-close-users").addEventListener("click", cerrarUsuarios);
 
   // ===== Archivos =====
-  function leerArchivo(file, cb) {
-    if (!file) return;
-    var limite = 6 * 1024 * 1024; // 6 MB
-    if (file.size > limite) {
-      alert("El archivo es muy grande (máx. 6 MB), parce.");
-      return;
-    }
+  fileInput.addEventListener("change", function() {
+    var f = fileInput.files && fileInput.files[0];
+    if (!f) return;
+    if (f.size > 6 * 1024 * 1024) { alert("Archivo muy grande (máx. 6 MB)."); return; }
     var reader = new FileReader();
-    reader.onload = function () {
-      cb({ nombre: file.name || "archivo", mime: file.type || "application/octet-stream", datos: reader.result });
+    reader.onload = function() {
+      archivoSeleccionado = {nombre:f.name||"archivo", mime:f.type||"application/octet-stream", datos:reader.result};
+      adjuntoName.textContent = f.name;
+      adjuntoBar.classList.remove("hidden");
     };
-    reader.readAsDataURL(file);
-  }
+    reader.readAsDataURL(f);
+  });
 
-  function mostrarAdjunto() {
-    adjuntoNombre.textContent = archivoSeleccionado.nombre;
-    adjuntoVista.classList.remove("oculto");
-  }
+  adjuntoRemove.addEventListener("click", function() {
+    archivoSeleccionado = null;
+    adjuntoBar.classList.add("hidden");
+    fileInput.value = "";
+  });
 
-  // ===== Filtro local de ofensivas (aviso) =====
-  var OFENSIVAS_LOCAL = [
-    "hijueputa", "malparido", "marica", "perra", "puta", "pendejo",
-    "huevon", "guevon", "imbecil", "estupido", "idiota", "cabron",
-    "zorra", "mierda", "carajo", "verga", "culo", "nazi", "retrasado"
-  ];
-  function normalizarLocal(t) {
-    return t.toLowerCase()
-      .replace(/[áàäâ]/g, "a").replace(/[éèëê]/g, "e")
-      .replace(/[íìïî]/g, "i").replace(/[óòöô]/g, "o")
-      .replace(/[úùüû]/g, "u").replace(/ñ/g, "n")
-      .replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
-  }
-  function tieneOfensivaLocal(texto) {
-    var limpio = " " + normalizarLocal(texto) + " ";
-    for (var i = 0; i < OFENSIVAS_LOCAL.length; i++) {
-      if (limpio.indexOf(" " + OFENSIVAS_LOCAL[i] + " ") !== -1) return true;
-    }
-    return false;
-  }
-
-  // ===== Video en vivo =====
-  function iniciarCamara() {
+  // ===== Cámara =====
+  $("btn-camera").addEventListener("click", function() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      anadirMensaje({ tipo: "sistema", texto: "Tu navegador no permite la cámara (usa Chrome, Edge o Safari reciente)." });
+      anadirMensaje({tipo:"sys", texto:"Tu navegador no permite la cámara."});
       return;
     }
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 320 }, height: { ideal: 240 } }, audio: false })
-      .then(function (stream) {
-        streamCamara = stream;
-        camaraActiva = true;
-        btnCam.textContent = "⏹";
-        btnCam.title = "Apagar cámara";
-        btnFoto.classList.remove("oculto");
-        videoLocal = document.createElement("video");
-        videoLocal.srcObject = stream;
-        videoLocal.muted = true;
-        videoLocal.playsInline = true;
-        videoLocal.play();
-        canvasOculto = document.createElement("canvas");
-        canvasOculto.width = 320;
-        canvasOculto.height = 240;
-        enviar({ t: "videoOn" });
-        anadirMensaje({ tipo: "sistema", texto: "🎥 Cámara en vivo activada." });
-        intervaloVideo = setInterval(enviarFrame, 120);
-        input.focus();
+    navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:320},height:{ideal:240}},audio:false})
+      .then(function(stream) {
+        var video = document.createElement("video");
+        video.srcObject = stream;
+        video.muted = true;
+        video.playsInline = true;
+        video.play();
+        var canvas = document.createElement("canvas");
+        canvas.width = 320;
+        canvas.height = 240;
+        setTimeout(function() {
+          var ctx = canvas.getContext("2d");
+          ctx.drawImage(video, 0, 0, 320, 240);
+          stream.getTracks().forEach(function(t) { t.stop(); });
+          var datos = canvas.toDataURL("image/jpeg", 0.85);
+          archivoSeleccionado = {nombre:"foto-camara.jpg", mime:"image/jpeg", datos:datos};
+          adjuntoName.textContent = "foto-camara.jpg";
+          adjuntoBar.classList.remove("hidden");
+          anadirMensaje({tipo:"sys", texto:"📸 Foto capturada. Presiona Enviar."});
+        }, 1500);
       })
-      .catch(function (err) {
-        anadirMensaje({ tipo: "sistema", texto: "No se pudo abrir la cámara: " + err.message + ". Verifica los permisos." });
+      .catch(function(err) {
+        anadirMensaje({tipo:"sys", texto:"No se pudo abrir la cámara: " + err.message});
       });
-  }
+  });
 
-  function apagarCamara() {
-    if (intervaloVideo) { clearInterval(intervaloVideo); intervaloVideo = null; }
-    if (streamCamara) {
-      streamCamara.getTracks().forEach(function (t) { t.stop(); });
-      streamCamara = null;
-    }
-    camaraActiva = false;
-    btnCam.textContent = "🎥";
-    btnCam.title = "Activar cámara en vivo";
-    btnFoto.classList.add("oculto");
-    if (videoLocal) { videoLocal.srcObject = null; videoLocal = null; }
-    enviar({ t: "videoOff" });
-    anadirMensaje({ tipo: "sistema", texto: "Cámara apagada." });
-  }
-
-  function enviarFrame() {
-    if (!camaraActiva || !videoLocal || !canvasOculto) return;
-    var ctx = canvasOculto.getContext("2d");
-    ctx.drawImage(videoLocal, 0, 0, 320, 240);
-    var datos = canvasOculto.toDataURL("image/jpeg", calidadVideo);
-    enviar({ t: "videoFrame", datos: datos });
-  }
-
-  function tomarFoto() {
-    if (!camaraActiva || !videoLocal || !canvasOculto) return;
-    var ctx = canvasOculto.getContext("2d");
-    ctx.drawImage(videoLocal, 0, 0, 320, 240);
-    var datos = canvasOculto.toDataURL("image/jpeg", 0.9);
-    var adj = { nombre: "foto-en-vivo.jpg", mime: "image/jpeg", datos: datos };
-    if (privadoCon) {
-      enviar({ t: "privArchivo", para: privadoCon, nombre: adj.nombre, mime: adj.mime, datos: adj.datos });
-    } else {
-      enviar({ t: "archivo", nombre: adj.nombre, mime: adj.mime, datos: adj.datos });
-    }
-    anadirMensaje({ tipo: "sistema", texto: "📸 Foto enviada." });
-  }
-
-  // ===== Render de videos remotos =====
-  function renderVideos() {
-    var claves = Object.keys(videosRemotos);
-    if (!claves.length) { videosPanel.classList.add("oculto"); return; }
-    videosPanel.classList.remove("oculto");
-    videosGrid.innerHTML = "";
-    claves.sort().forEach(function (nick) {
-      var v = videosRemotos[nick];
-      var wrap = document.createElement("div");
-      wrap.className = "video-remoto";
-      var et = document.createElement("span");
-      et.className = "video-remoto-nick";
-      et.textContent = "🎥 " + nick;
-      wrap.appendChild(et);
-      var img = document.createElement("img");
-      img.alt = "video de " + nick;
-      v.img = img;
-      wrap.appendChild(img);
-      videosGrid.appendChild(wrap);
-    });
-  }
-
-  function agregarVideoRemoto(nick) {
-    if (videosRemotos[nick]) return;
-    videosRemotos[nick] = { img: null };
-    renderVideos();
-    if (!document.hidden) {
-      try { new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=").play(); } catch (e) {}
-    }
-  }
-
-  function quitarVideoRemoto(nick) {
-    delete videosRemotos[nick];
-    renderVideos();
-  }
-
-  function actualizarFrameRemoto(nick, datos) {
-    var v = videosRemotos[nick];
-    if (!v || !v.img) return;
-    v.img.src = datos;
-  }
-
-  // ===== Moderación (botones por usuario) =====
-  function accionMod(u, accion, extra) {
-    var msj = { t: "mod", para: u, accion: accion };
-    if (extra) Object.keys(extra).forEach(function (k) { msj[k] = extra[k]; });
-    enviar(msj);
-  }
-
-  function preguntarMod(u) {
-    var opciones = [];
-    if (soyMod) {
-      opciones.push("🚫 Expulsar a " + u, "🔇 Silenciar (minutos)", "🚷 Banear (horas)", "🎖️ Dar permisos de moderador", "Cancelar");
-    } else {
-      opciones.push("🔒 Chat privado con " + u, "🚩 Reportar a " + u, "Cancelar");
-    }
-    var r = prompt("Acción con " + u + ":\n" + opciones.map(function (o, i) { return (i + 1) + ". " + o; }).join("\n"), "1");
-    if (!r) return;
-    var idx = parseInt(r, 10);
-    if (soyMod) {
-      if (idx === 1) accionMod(u, "kick");
-      else if (idx === 2) {
-        var mins = parseInt(prompt("Minutos de silencio:", "5"), 10);
-        if (mins) accionMod(u, "mute", { minutos: mins });
-      } else if (idx === 3) {
-        var hrs = parseInt(prompt("Horas de baneo:", "2"), 10);
-        if (hrs) accionMod(u, "ban", { horas: hrs });
-      } else if (idx === 4) accionMod(u, "mod");
-    } else {
-      if (idx === 1) abrirPrivado(u);
-      else if (idx === 2) {
-        enviar({ t: "report", para: u });
-        anadirMensaje({ tipo: "sistema", texto: "🚩 Reportaste a " + u + ". Los moderadores lo verán." });
-      }
-    }
-  }
-
-  // ===== Conexión =====
-  function enviar(obj) {
-    if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(obj));
-  }
-
-  function conectar() {
-    anadirMensaje({ tipo: "sistema", texto: "Conectando al Parche de Cali..." });
-    socket = new WebSocket(servidor);
-
-    socket.addEventListener("open", function () {
-      conectado = true;
-      input.disabled = false;
-      btnEnviar.disabled = false;
+  // ===== Emoji =====
+  var EMOJIS = ["😀","😁","😂","🤣","😊","😍","😘","😎","🤩","🥳","😢","😭","😡","🤔","😴","🤗","🙃","😜","🤙","👍","👎","👏","🙏","💪","🔥","❤️","💔","💯","🎶","💃","🕺","🌴","🍺","🍹","🥂","🎉","🎊","⭐","✨","🚀","😅","😇","🥰","😋","🤤","😈","👀","🫶","🙌","🤝","✌️","🤞","🖕","👋","💋","🐶","🐱","🦄","🐯","🌶️","🍕","🌮","⚽","🏆","🎁","🔒","💬","🤷"];
+  EMOJIS.forEach(function(e) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "emoji-item";
+    b.textContent = e;
+    b.addEventListener("click", function() {
+      input.value += e;
       input.focus();
-      enviar({ t: "join", nick: NICK, sala: SALA, avatar: MI_AVATAR, color: MI_COLOR });
+      emojiPanel.classList.remove("abierto");
     });
+    emojiPanel.appendChild(b);
+  });
+  btnEmoji.addEventListener("click", function() { emojiPanel.classList.toggle("abierto"); });
 
-    socket.addEventListener("message", function (ev) {
-      var m;
-      try { m = JSON.parse(ev.data); } catch (e) { return; }
-      switch (m.t) {
-        case "sys":
-          if (privadoCon) {
-            var info = document.createElement("div");
-            info.className = "mensaje sistema";
-            info.textContent = m.texto;
-            mensajes.appendChild(info);
-            mensajes.scrollTop = mensajes.scrollHeight;
-          } else {
-            anadirMensaje({ tipo: "sistema", texto: m.texto });
-          }
-          break;
-        case "msg":
-          if (!privadoCon) anadirMensaje({ tipo: "msg", nick: m.nick, texto: m.texto });
-          break;
-        case "archivo":
-          if (!privadoCon) anadirMensaje({
-            tipo: "archivo", nick: m.de, texto: "",
-            nombre: m.nombre, mime: m.mime, datos: m.datos
-          });
-          break;
-        case "priv":
-        case "privArchivo":
-          pintarMensajePrivado(m);
-          break;
-        case "users":
-          usuarios = m.lista || [];
-          if (m.detalles) {
-            detalles = {};
-            m.detalles.forEach(function (d) { detalles[d.nick] = d; });
-          }
-          renderUsuarios();
-          break;
-        case "rol":
-          soyMod = !!m.esMod;
-          anadirMensaje({ tipo: "sistema", texto: soyMod ? "🛡️ Eres moderador del Parche. Puedes expulsar, silenciar y banear." : "Eres un usuario. Toca 🚩 para reportar contenido ofensivo." });
-          break;
-        case "videoOn":
-          agregarVideoRemoto(m.de);
-          break;
-        case "videoOff":
-          quitarVideoRemoto(m.de);
-          break;
-        case "videoFrame":
-          actualizarFrameRemoto(m.de, m.datos);
-          break;
-        case "videoLista":
-          (m.lista || []).forEach(function (n) { agregarVideoRemoto(n); });
-          break;
-        case "report":
-          if (soyMod) anadirMensaje({ tipo: "sistema", texto: "🚩 " + m.de + " reportó a " + m.para + ". Toca el usuario y elige la acción." });
-          break;
-      }
-    });
+  // ===== Radio =====
+  var radioAudio = $("radio-audio");
+  var radioPlay = $("radio-play");
+  var radioName = $("radio-name");
+  var radioSelect = $("radio-select");
+  var radioLista = [
+    {nombre:"Radio El Sol", url:"https://us-b4-p-e-qg12-audio.cdn.mdstrm.com/live-audio-aw/632cb6ecaa9ace684913bf19/playlist.m3u8"},
+    {nombre:"Rumba Stereo", url:"https://mdstrm.com/audio/632ce17ed1dcd7027f331209/live.m3u8"},
+    {nombre:"Olímpica Stereo", url:"https://playerservices.streamtheworld.com/api/livestream-redirect/OLP_CALI.mp3"},
+    {nombre:"Boom FM", url:"https://streamming.dobitsoluciones.com/livestream/1"},
+    {nombre:"La X", url:"https://tupanel.info/stream/2digitalradioHDsslLIVE040"},
+    {nombre:"Oxígeno", url:"https://mdstrm.com/audio/5fab0687bcd6c2389ee9480c/live.m3u8"},
+    {nombre:"Los 40", url:"https://playerservices.streamtheworld.com/api/livestream-redirect/%20LOS40_COLOMBIA.mp3"},
+    {nombre:"Radio Policía", url:"https://radio35.virtualtronics.com/proxy/radiopolicia964?mp=/stream"}
+  ];
+  radioAudio.src = radioLista[0].url;
+  radioPlay.addEventListener("click", function() {
+    if (radioAudio.paused) radioAudio.play().catch(function() {});
+    else radioAudio.pause();
+  });
+  radioSelect.addEventListener("change", function() {
+    var emi = radioLista[parseInt(radioSelect.value, 10) || 0];
+    radioName.textContent = emi.nombre;
+    radioAudio.src = emi.url;
+    radioAudio.load();
+    radioAudio.play().catch(function() {});
+  });
+  radioAudio.addEventListener("play", function() { radioPlay.textContent = "⏸"; });
+  radioAudio.addEventListener("pause", function() { radioPlay.textContent = "▶"; });
 
-    socket.addEventListener("close", function (ev) {
-      conectado = false;
-      input.disabled = true;
-      btnEnviar.disabled = true;
-      if (camaraActiva) apagarCamara();
-      var texto = "Se perdió la conexión. Reconectando en 3 segundos...";
-      if (ev && ev.reason) texto = ev.reason + " Reconectando en 3 segundos...";
-      anadirMensaje({ tipo: "sistema", texto: texto });
-      setTimeout(conectar, 3000);
-    });
-
-    socket.addEventListener("error", function () {
-      anadirMensaje({ tipo: "sistema", texto: "Error de conexión con el servidor." });
-      socket.close();
+  // ===== Polling de mensajes =====
+  function cargarMensajes() {
+    if (!TOKEN) return;
+    apiGet("/api/messages?sala=" + encodeURIComponent(SALA) + "&since=" + lastMsgId + "&token=" + TOKEN, function(err, res) {
+      if (err || !res || !res.messages) return;
+      res.messages.forEach(function(m) {
+        if (m.id > lastMsgId) lastMsgId = m.id;
+        if (m.tipo === "sys") {
+          anadirMensaje({tipo:"sys", texto:m.texto});
+        } else if (m.tipo === "archivo") {
+          anadirMensaje({tipo:"archivo", nick:m.nick, avatar:m.avatar, color:m.color, nombre:m.nombre, mime:m.mime, datos:m.datos, rol:m.rol, esMod:false});
+        } else if (m.tipo === "msg") {
+          anadirMensaje({tipo:"msg", nick:m.nick, avatar:m.avatar, color:m.color, texto:m.texto, rol:m.rol, esMod:false});
+        }
+      });
     });
   }
 
-  // ===== Eventos =====
-  form.addEventListener("submit", function (e) {
+  function cargarPrivMensajes() {
+    if (!TOKEN || !privadoCon) return;
+    apiGet("/api/priv/messages?con=" + encodeURIComponent(privadoCon) + "&since=" + lastPrivMsgId + "&token=" + TOKEN, function(err, res) {
+      if (err || !res || !res.messages) return;
+      res.messages.forEach(function(m) {
+        pintarPrivMsg(m);
+      });
+    });
+  }
+
+  function cargarUsuarios() {
+    if (!TOKEN) return;
+    apiGet("/api/users?sala=" + encodeURIComponent(SALA) + "&token=" + TOKEN, function(err, res) {
+      if (err || !res || !res.users) return;
+      renderUsuarios(res.users);
+    });
+  }
+
+  function poll() {
+    cargarMensajes();
+    cargarPrivMensajes();
+  }
+
+  // ===== Join =====
+  function join() {
+    apiPost("/api/join", {nick:NICK, sala:SALA, avatar:MI_AVATAR, color:MI_COLOR}, function(err, res) {
+      if (err || !res) {
+        anadirMensaje({tipo:"sys", texto:"Error de conexión. Reintentando en 3s..."});
+        setTimeout(join, 3000);
+        return;
+      }
+      if (res.error) {
+        anadirMensaje({tipo:"sys", texto:res.error});
+        setTimeout(function() { location.href = "index.html"; }, 3000);
+        return;
+      }
+      TOKEN = res.token;
+      SOY_MOD = res.esMod;
+      MI_ROL = res.rol;
+      MIS_PUNTOS = res.puntos;
+      input.disabled = false;
+      btnSend.disabled = false;
+      input.focus();
+
+      anadirMensaje({tipo:"sys", texto:"Bienvenido a " + (SALAS_TITULO[SALA] || "#" + SALA) + ", " + NICK + ". Tu rango: " + res.rolLabel + " (" + res.puntos + " pts)"});
+
+      if (SOY_MOD) {
+        anadirMensaje({tipo:"sys", texto:"🛡️ Eres moderador. Toca un usuario para moderar."});
+      }
+
+      poll();
+      cargarUsuarios();
+      polling = setInterval(poll, 2000);
+      userPolling = setInterval(cargarUsuarios, 3000);
+    });
+  }
+
+  // ===== Enviar mensaje =====
+  form.addEventListener("submit", function(e) {
     e.preventDefault();
-    if (!conectado) return;
+    if (!TOKEN) return;
+
+    // Archivo
     if (archivoSeleccionado) {
       if (privadoCon) {
-        enviar({ t: "privArchivo", para: privadoCon, nombre: archivoSeleccionado.nombre, mime: archivoSeleccionado.mime, datos: archivoSeleccionado.datos });
+        apiPost("/api/privArchivo?token=" + TOKEN, {para:privadoCon, nombre:archivoSeleccionado.nombre, mime:archivoSeleccionado.mime, datos:archivoSeleccionado.datos}, function(err, res) {
+          if (res && res.ok) {
+            // Agregar localmente
+            var obj = {tipo:"archivo", nick:NICK, texto:"", propio:true, privado:true, nombre:archivoSeleccionado.nombre, mime:archivoSeleccionado.mime, datos:archivoSeleccionado.datos, color:MI_COLOR, avatar:MI_AVATAR, rol:MI_ROL};
+            privados[privadoCon].msgs.push(obj);
+            anadirMensaje(obj);
+          } else if (res && res.error) {
+            anadirMensaje({tipo:"sys", texto:res.error});
+          }
+        });
       } else {
-        enviar({ t: "archivo", nombre: archivoSeleccionado.nombre, mime: archivoSeleccionado.mime, datos: archivoSeleccionado.datos });
+        apiPost("/api/messages?token=" + TOKEN, {nombre:archivoSeleccionado.nombre, mime:archivoSeleccionado.mime, datos:archivoSeleccionado.datos}, function(err, res) {
+          if (res && res.error) anadirMensaje({tipo:"sys", texto:res.error});
+        });
       }
       archivoSeleccionado = null;
-      adjuntoVista.classList.add("oculto");
-      archivoInput.value = "";
+      adjuntoBar.classList.add("hidden");
+      fileInput.value = "";
       input.focus();
       return;
     }
+
+    // Texto
     var texto = input.value.trim();
     if (!texto) return;
-    if (!privadoCon && tieneOfensivaLocal(texto)) {
-      anadirMensaje({ tipo: "sistema", texto: "🚫 Ese mensaje contiene lenguaje ofensivo. La sala es pública: expulsión si se repite. En privado sí puedes hablar libre." });
-      input.value = "";
-      input.focus();
-      return;
-    }
+
     if (privadoCon) {
-      enviar({ t: "priv", para: privadoCon, texto: texto });
+      apiPost("/api/priv?token=" + TOKEN, {para:privadoCon, texto:texto}, function(err, res) {
+        if (res && !res.error) {
+          var obj = {tipo:"msg", nick:NICK, texto:texto, propio:true, privado:true, color:MI_COLOR, avatar:MI_AVATAR, rol:MI_ROL};
+          privados[privadoCon].msgs.push(obj);
+          anadirMensaje(obj);
+        } else if (res && res.error) {
+          anadirMensaje({tipo:"sys", texto:res.error});
+        }
+      });
     } else {
-      enviar({ t: "msg", texto: texto });
+      apiPost("/api/messages?token=" + TOKEN, {texto:texto}, function(err, res) {
+        if (res && res.error) {
+          anadirMensaje({tipo:"sys", texto:res.error});
+        }
+      });
     }
     input.value = "";
     input.focus();
   });
 
-  archivoInput.addEventListener("change", function () {
-    var f = archivoInput.files && archivoInput.files[0];
-    if (!f) return;
-    leerArchivo(f, function (adj) {
-      archivoSeleccionado = adj;
-      mostrarAdjunto();
-    });
-  });
+  // ===== Eventos =====
+  privBack.addEventListener("click", cerrarPrivado);
 
-  adjuntoQuitar.addEventListener("click", function () {
-    archivoSeleccionado = null;
-    adjuntoVista.classList.add("oculto");
-    archivoInput.value = "";
-  });
-
-  privadoVolver.addEventListener("click", cerrarPrivado);
-  btnUsuarios.addEventListener("click", abrirUsuariosMovil);
-  btnCerrarUsuarios.addEventListener("click", cerrarUsuariosMovil);
-
-  btnCam.addEventListener("click", function () {
-    if (camaraActiva) apagarCamara();
-    else iniciarCamara();
-  });
-  btnFoto.addEventListener("click", tomarFoto);
-  videosCerrar.addEventListener("click", function () {
-    videosPanel.classList.add("oculto");
-  });
-
-  window.addEventListener("beforeunload", function () {
-    if (camaraActiva) apagarCamara();
-  });
-
-  // ===== Emoji picker =====
-  var EMOJIS = ["😀","😁","😂","🤣","😊","😍","😘","😎","🤩","🥳","😢","😭","😡","🤔","😴","🤗","🙃","😜","🤙","👍","👎","👏","🙏","💪","🔥","❤️","💔","💯","🎶","💃","🕺","🌴","🍺","🍹","🥂","🎉","🎊","⭐","✨","🚀","😅","😇","🥰","😋","🤤","😈","👀","🫶","🙌","🤝","✌️","🤞","🖕","👋","💋","🐶","🐱","🦄","🐯","🌶️","🍕","🌮","⚽","🏆","🎁","🔒","💬","🤷"];
-  var emojisDispersos = [];
-  EMOJIS.forEach(function (e) {
-    var b = document.createElement("button");
-    b.type = "button";
-    b.className = "emoji-item";
-    b.textContent = e;
-    b.addEventListener("click", function () {
-      input.value += e;
-      input.focus();
-      emojiPanel.classList.add("oculto");
-    });
-    emojisDispersos.push(b);
-    emojiPanel.appendChild(b);
-  });
-  btnEmoji.addEventListener("click", function () {
-    emojiPanel.classList.toggle("oculto");
-  });
-
-  // ===== Radio =====
-  var radioAudio = $("radio-audio");
-  var radioPlay = $("radio-play");
-  var radioNombre = $("radio-nombre");
-  var radioEmisoras = $("radio-emisoras");
-  var radioEmisorasLista = [
-    { nombre: "Radio El Sol", url: "https://us-b4-p-e-qg12-audio.cdn.mdstrm.com/live-audio-aw/632cb6ecaa9ace684913bf19/playlist.m3u8" },
-    { nombre: "Rumba Stereo", url: "https://mdstrm.com/audio/632ce17ed1dcd7027f331209/live.m3u8" },
-    { nombre: "Olímpica Stereo", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/OLP_CALI.mp3" },
-    { nombre: "Boom FM", url: "https://streamming.dobitsoluciones.com/livestream/1" },
-    { nombre: "La X", url: "https://tupanel.info/stream/2digitalradioHDsslLIVE040" },
-    { nombre: "Oxígeno", url: "https://mdstrm.com/audio/5fab0687bcd6c2389ee9480c/live.m3u8" },
-    { nombre: "Los 40", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/%20LOS40_COLOMBIA.mp3" },
-    { nombre: "Radio Policía", url: "https://radio35.virtualtronics.com/proxy/radiopolicia964?mp=/stream" }
-  ];
-  radioAudio.src = radioEmisorasLista[0].url;
-  function cambiarEmisora() {
-    var emi = radioEmisorasLista[parseInt(radioEmisoras.value, 10) || 0];
-    radioNombre.textContent = emi.nombre;
-    radioAudio.src = emi.url;
-    radioAudio.load();
-    radioAudio.play().catch(function () {
-      anadirMensaje({ tipo: "sistema", texto: "📻 No se pudo reproducir " + emi.nombre + ". Prueba otra emisora." });
-    });
-  }
-  radioPlay.addEventListener("click", function () {
-    if (radioAudio.paused) {
-      radioAudio.play().catch(function () {
-        anadirMensaje({ tipo: "sistema", texto: "📻 No se pudo reproducir la radio. Prueba otra emisora." });
-      });
-    } else {
-      radioAudio.pause();
+  window.addEventListener("beforeunload", function() {
+    if (TOKEN) {
+      apiPost("/api/leave", {token:TOKEN});
     }
   });
-  radioEmisoras.addEventListener("change", cambiarEmisora);
-  radioAudio.addEventListener("play", function () { radioPlay.textContent = "⏸"; });
-  radioAudio.addEventListener("pause", function () { radioPlay.textContent = "▶"; });
 
-  // ===== Videollamada (Jitsi) =====
-  function cerrarLlamada() {
-    llamadaAbierta = false;
-    videoLlamadaMarco.innerHTML = "";
-    videoLlamadaPanel.classList.add("oculto");
-  }
-  btnVideollamada.addEventListener("click", function () {
-    if (!privadoCon) return;
-    if (llamadaAbierta) { cerrarLlamada(); return; }
-    var sala = "parche-cali-" + NICK.replace(/[^a-zA-Z0-9]/g, "") + "-" + privadoCon.replace(/[^a-zA-Z0-9]/g, "");
-    videoLlamadaCon.textContent = privadoCon;
-    videoLlamadaPanel.classList.remove("oculto");
-    llamadaAbierta = true;
-    videoLlamadaMarco.innerHTML = "";
-    var iframe = document.createElement("iframe");
-    iframe.src = "https://meet.jit.si/" + sala + "#userInfo.displayName=\"" + encodeURIComponent(NICK) + "\"";
-    iframe.allow = "camera; microphone; fullscreen; display-capture";
-    iframe.className = "videollamada-iframe";
-    videoLlamadaMarco.appendChild(iframe);
-    anadirMensaje({ tipo: "sistema", texto: "📹 Invitaste a " + privadoCon + " a una videollamada. Comparte esta sala para que entren los dos." });
-  });
-  videoLlamadaCerrar.addEventListener("click", cerrarLlamada);
-  privadoVolver.addEventListener("click", function () { if (llamadaAbierta) cerrarLlamada(); cerrarPrivado(); });
-
-  conectar();
+  // ===== Iniciar =====
+  join();
 })();

@@ -46,17 +46,55 @@ servidor. Define la URL del WebSocket creando `public/config.js`:
 window.PARCHE_CONFIG = { wsUrl: "wss://el-parche-de-cali.onrender.com/ws" };
 ```
 
+## 🏆 Sistema de Roles y Rangos
+
+El chat tiene un sistema automático de rangos que recompensa el buen comportamiento:
+
+| Rango | Puntos | Badge | Descripción |
+|-------|--------|-------|-------------|
+| 🌱 Nuevo | 0 | `badge-nuevo` | Usuarios nuevos |
+| ✅ Activo | 10+ | `badge-activo` | Participación regular |
+| 🏅 Veterano | 50+ | `badge-veterano` | Miembros constantes |
+| ⭐ Leyenda | 200+ | `badge-leyenda` | Los más dedicados |
+
+**Cómo ganar puntos:**
+- +1 punto por cada mensaje enviado
+- +3 puntos cada 5 minutos conectado (bonus por tiempo)
+- +2 puntos extra por usar lenguaje respetuoso (palabras como "gracias", "buenas", "excelente")
+
+**Moderación automática:**
+- Filtro de palabras ofensivas con sistema de expulsiones progresivas
+- Detección de spam y promociones
+- Los moderadores pueden expulsar, silenciar y banear usuarios
+
+## 📱 Versión Móvil
+
+El sitio está optimizado para dispositivos móviles con:
+- Diseño responsive completo
+- Menú hamburguesa para navegación
+- Panel de usuarios deslizante
+- Badges de roles visibles en chat
+- Formulario adaptado a pantallas pequeñas
+
 ## 📁 Estructura
 
 ```
 el-parche-de-cali/
-├── public/          # sitio (GitHub Pages)
-│   ├── index.html   # entrada: apodo + sala
-│   ├── chat.html    # sala de chat
-│   ├── css/estilo.css
-│   └── js/chat.js   # cliente WebSocket
+├── index.html       # entrada: apodo + sala
+├── chat.html        # sala de chat
+├── terminos.html    # términos y condiciones
+├── css/
+│   └── estilo.css   # estilos responsivos
+├── js/
+│   └── chat.js      # cliente WebSocket
+├── img/
+│   ├── logo.svg         # logo principal (bandera de Cali)
+│   ├── logo-header.svg  # logo para header del chat
+│   ├── icono.svg        # icono compacto
+│   └── favicon.svg      # favicon del navegador
 ├── server/
-│   └── server.js    # servidor HTTP + WebSocket
+│   ├── server.js    # servidor HTTP + WebSocket
+│   └── roles.json   # datos de puntos/rangos (auto-generado)
 ├── package.json
 ├── render.yaml
 └── test-parche.js

@@ -2,38 +2,101 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>#Cali · El Parche de Cali</title>
-<meta name="description" content="Sala de chat de El Parche de Cali. Chatea en vivo con los caleños.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='33' fill='%23ffcf00'/><rect y='33' width='100' height='34' fill='%23007a4d'/><rect y='67' width='100' height='33' fill='%23e3222a'/></svg>">
+<link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/estilo.css">
+<style>
+html,body{height:100%;margin:0;padding:0;overflow:hidden}
+body{display:flex;flex-direction:column;font-family:'Open Sans',Arial,sans-serif}
+
+.chat-nav{flex-shrink:0}
+.chat-body{flex:1;display:flex;overflow:hidden;position:relative}
+.chat-mensajes{flex:1;overflow-y:auto;padding:12px 16px;background:#f4f1ea}
+.chat-usuarios{width:260px;border-left:1px solid #ddd;background:#fff;overflow-y:auto;display:flex;flex-direction:column}
+.chat-input-bar{flex-shrink:0;border-top:1px solid #ddd;background:#fff;padding:10px 16px}
+
+.mensaje{margin-bottom:10px;max-width:85%}
+.mensaje.sistema{text-align:center;color:#888;font-size:.85em;max-width:100%;margin:6px 0}
+.mensaje.propio{margin-left:auto}
+.mensaje .nick{font-weight:700;font-size:.85em;margin-right:6px}
+.mensaje .avatar-mini{margin-right:4px}
+.mensaje .texto{display:block;background:#fff;border-radius:12px;padding:8px 12px;box-shadow:0 1px 3px rgba(0,0,0,.1);word-wrap:break-word}
+.mensaje.propio .texto{background:#dcf8c6}
+.mensaje .hora{font-size:.7em;color:#999;margin-top:2px;display:block}
+.mensaje.archivo-img img{max-width:240px;border-radius:8px;cursor:pointer}
+.mensaje.archivo-vid video{max-width:280px;border-radius:8px}
+.mensaje.archivo-link{color:#0b7285;font-weight:600}
+
+.badge{font-size:.65em;padding:1px 6px;border-radius:8px;color:#fff;margin-left:4px;vertical-align:middle}
+.badge-nuevo{background:#3730a3}
+.badge-activo{background:#065f46}
+.badge-veterano{background:#92400e}
+.badge-leyenda{background:#9d174d}
+.badge-mod{background:#e3222a}
+
+.usuario-item{padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;border-bottom:1px solid #f0f0f0}
+.usuario-item:hover{background:#f5f5f5}
+.usuario-item.yo{background:#e8f5e9;font-weight:700}
+.usuario-item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.usuario-item .nombre{flex:1;font-size:.9em}
+.usuario-item .no-leidos{background:#e3222a;color:#fff;border-radius:50%;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:.7em;font-weight:700}
+
+.priv-bar{background:#fff3cd;padding:6px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #ffc107}
+.priv-bar.hidden{display:none}
+
+.radio-bar{flex-shrink:0;background:#1a1a2e;color:#fff;padding:4px 16px;display:flex;align-items:center;gap:8px;font-size:.85em}
+.radio-bar button{background:none;border:none;color:#fff;cursor:pointer;font-size:1.1em}
+.radio-bar select{background:#333;color:#fff;border:1px solid #555;border-radius:4px;padding:2px 4px;font-size:.85em}
+
+.emoji-panel{display:none;flex-wrap:wrap;gap:4px;padding:8px;background:#fff;border-top:1px solid #ddd;max-height:140px;overflow-y:auto}
+.emoji-panel.abierto{display:flex}
+.emoji-item{background:none;border:none;font-size:1.3em;cursor:pointer;padding:4px;border-radius:4px}
+.emoji-item:hover{background:#eee}
+
+.adjunto-bar{background:#e3f2fd;padding:4px 16px;display:flex;align-items:center;gap:8px;font-size:.85em}
+.adjunto-bar.hidden{display:none}
+
+.input-group{display:flex;gap:8px;align-items:center}
+.input-group input[type=text]{flex:1}
+.input-group .file-input{display:none}
+
+@media(max-width:768px){
+  .chat-usuarios{position:absolute;right:0;top:0;bottom:0;width:260px;z-index:10;box-shadow:-2px 0 8px rgba(0,0,0,.2);display:none}
+  .chat-usuarios.abierto{display:flex}
+}
+</style>
 </head>
-<body class="sala">
-<div class="sala-cabecera">
-  <div class="contenedor">
-    <a href="index.html" class="marca">
-      <span class="marca-ico">💃</span>
-      <span class="marca-txt">
-        <strong>El Parche de Cali</strong>
-        <small id="sala-titulo">#Cali</small>
-      </span>
+<body>
+
+<!-- Nav -->
+<nav class="navbar is-dark" style="flex-shrink:0">
+  <div class="navbar-brand">
+    <a href="index.html" style="display:flex;align-items:center;gap:8px;padding:6px 12px;color:#fff;text-decoration:none">
+      <img src="img/favicon.svg" width="32" height="32" alt="Logo">
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:1.3em;letter-spacing:1px">El Parche de Cali</span>
+      <span id="sala-label" style="color:#ffcf00;font-size:.8em"></span>
     </a>
-  <div class="sala-info">
-      <span class="chip" id="chip-conectados">👥 0 conectados</span>
-      <button type="button" class="btn-usuarios" id="btn-usuarios" title="Usuarios">👥</button>
-      <a href="index.html" class="btn-salir" title="Salir">Salir</a>
+  </div>
+  <div class="navbar-menu">
+    <div class="navbar-end">
+      <div class="navbar-item">
+        <span id="chip-users" style="color:#aaa;font-size:.9em">👥 0 conectados</span>
+        <button class="button is-small is-light ml-2" id="btn-toggle-users" title="Usuarios">👥</button>
+        <a href="index.html" class="button is-small is-danger ml-2">Salir</a>
+      </div>
     </div>
   </div>
-</div>
+</nav>
 
-<!-- Barra de radio -->
-<div class="radio-barra">
-  <button type="button" class="radio-play" id="radio-play" title="Reproducir / pausar">▶</button>
-  <span class="radio-ico" id="radio-ico">📻</span>
-  <span class="radio-nombre" id="radio-nombre">Radio El Sol</span>
-  <select class="radio-emisoras" id="radio-emisoras" title="Cambiar emisora">
-    <option value="0" selected>Radio El Sol</option>
+<!-- Radio -->
+<div class="radio-bar">
+  <button id="radio-play" title="Play / Pause">▶</button>
+  <span>📻</span>
+  <span id="radio-name">Radio El Sol</span>
+  <select id="radio-select">
+    <option value="0">Radio El Sol</option>
     <option value="1">Rumba Stereo</option>
     <option value="2">Olímpica Stereo</option>
     <option value="3">Boom FM</option>
@@ -45,63 +108,47 @@
   <audio id="radio-audio" preload="none"></audio>
 </div>
 
-<!-- Barra del chat privado -->
-<div class="privado-barra oculto" id="privado-barra">
-  <button type="button" class="privado-volver" id="privado-volver" title="Volver a la sala">←</button>
-  <span class="privado-titulo" id="privado-titulo"></span>
-  <button type="button" class="privado-videollamada" id="btn-videollamada" title="Videollamada">📹</button>
-  <span class="privado-bloqueo" id="privado-bloqueo" title="Chat privado">🔒</span>
+<!-- Private chat bar -->
+<div class="priv-bar hidden" id="priv-bar">
+  <button id="priv-back" title="Volver" class="button is-small is-warning">← Volver</button>
+  <span style="font-weight:700" id="priv-title"></span>
 </div>
 
-<div class="videollamada-panel oculto" id="videollamada-panel">
-  <div class="videollamada-cab">
-    <span>📹 Videollamada con <b id="videollamada-con"></b></span>
-    <button type="button" class="videollamada-cerrar" id="videollamada-cerrar" title="Cerrar">✕</button>
-  </div>
-  <div class="videollamada-marco" id="videollamada-marco"></div>
-</div>
-
-<div class="videos-panel oculto" id="videos-panel">
-  <div class="videos-cab">
-    <span>🎥 En vivo</span>
-    <button type="button" class="videos-cerrar" id="videos-cerrar" title="Ocultar videos">✕</button>
-  </div>
-  <div class="videos-grid" id="videos-grid"></div>
-</div>
-
-<div class="contenedor sala-cuerpo">
-  <section class="panel-mensajes" id="mensajes">
+<!-- Body -->
+<div class="chat-body">
+  <div class="chat-mensajes" id="mensajes">
     <div class="mensaje sistema">Conectando al Parche de Cali...</div>
-  </section>
-
-  <aside class="panel-usuarios" id="panel-usuarios">
-    <div class="panel-usuarios-cab">
-      <h3>En el Parche</h3>
-      <button type="button" class="btn-cerrar-usuarios" id="btn-cerrar-usuarios" title="Cerrar">✕</button>
+  </div>
+  <div class="chat-usuarios" id="panel-users">
+    <div style="padding:12px;font-weight:700;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center">
+      <span>En el Parche</span>
+      <button class="delete is-small" id="btn-close-users"></button>
     </div>
-    <ul id="lista-usuarios"></ul>
-  </aside>
+    <div id="list-users" style="flex:1;overflow-y:auto"></div>
+  </div>
 </div>
 
-<div class="sala-pie">
-  <form id="form-mensaje" class="contenedor form-mensaje">
-    <div class="cam-controls">
-      <label class="btn-cam" id="btn-cam" title="Activar cámara en vivo">🎥</label>
-      <label class="btn-cam btn-cam-foto oculto" id="btn-foto" title="Tomar foto en vivo">📸</label>
-      <div class="adjuntar-wrap">
-        <label class="btn-adjuntar" id="btn-adjuntar" title="Enviar foto o video (galería)" for="archivo-input">📷</label>
-        <input type="file" id="archivo-input" accept="image/*,video/*" hidden>
-      </div>
-      <button type="button" class="btn-emoji" id="btn-emoji" title="Emojis">😊</button>
+<!-- Adjunto preview -->
+<div class="adjunto-bar hidden" id="adjunto-bar">
+  <span id="adjunto-name"></span>
+  <button class="delete is-small" id="adjunto-remove"></button>
+</div>
+
+<!-- Emoji panel -->
+<div class="emoji-panel" id="emoji-panel"></div>
+
+<!-- Input -->
+<div class="chat-input-bar">
+  <form id="msg-form" class="input-group">
+    <button type="button" id="btn-camera" title="Tomar foto" class="button is-small is-info">📷</button>
+    <div class="file-input">
+      <input type="file" id="file-input" accept="image/*,video/*">
     </div>
-    <input type="text" id="mensaje-input" maxlength="500" placeholder="Escribe tu mensaje, parce..." autocomplete="off" disabled>
-    <button type="submit" id="btn-enviar" disabled>Enviar</button>
+    <label for="file-input" class="button is-small is-link" title="Adjuntar archivo" style="cursor:pointer">📎</label>
+    <button type="button" id="btn-emoji" title="Emojis" class="button is-small">😊</button>
+    <input type="text" id="msg-input" maxlength="500" placeholder="Escribe tu mensaje, parce..." autocomplete="off" disabled class="input">
+    <button type="submit" id="btn-send" disabled class="button is-success">Enviar</button>
   </form>
-  <div class="emoji-panel oculto" id="emoji-panel"></div>
-  <div class="adjunto-vista oculto" id="adjunto-vista">
-    <span class="adjunto-nombre" id="adjunto-nombre"></span>
-    <button type="button" class="adjunto-quitar" id="adjunto-quitar" title="Quitar">✕</button>
-  </div>
 </div>
 
 <script src="js/chat.js"></script>
