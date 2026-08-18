@@ -178,7 +178,8 @@
   function abrirPrivado(nick) {
     if (!nick || nick === NICK) return;
     privadoCon = nick;
-    if (!privados[nick]) privados[nick] = {msgs:[], lastId:0};
+    if (!privados[nick]) privados[nick] = {msgs:[], lastId:0, noLeidos:0};
+    privados[nick].noLeidos = 0;
     lastPrivMsgId = privados[nick].lastId || 0;
 
     privBar.classList.remove("hidden");
@@ -191,6 +192,7 @@
     mensajesEl.appendChild(intro);
     privados[nick].msgs.forEach(function(m) { anadirMensaje(m); });
     input.focus();
+    renderPrivChips();
     cerrarUsuarios();
   }
 
@@ -200,6 +202,7 @@
     privBar.classList.add("hidden");
     mensajesEl.innerHTML = "";
     lastMsgId = 0;
+    renderPrivChips();
     cargarMensajes();
     input.focus();
   }
@@ -207,7 +210,7 @@
   function pintarPrivMsg(msg) {
     var nick = msg.from;
     var key = [NICK, nick].sort().join("|");
-    if (!privados[nick]) privados[nick] = {msgs:[], lastId:0};
+    if (!privados[nick]) privados[nick] = {msgs:[], lastId:0, noLeidos:0};
     var obj = {
       tipo: msg.tipo === "archivo" ? "archivo" : "msg",
       nick: nick,
@@ -228,11 +231,37 @@
       anadirMensaje(obj);
       lastPrivMsgId = msg.id;
     } else if (msg.from !== NICK) {
-      // Notificación sonora
+      privados[nick].noLeidos = (privados[nick].noLeidos || 0) + 1;
+      renderPrivChips();
       if (!document.hidden) {
         try { new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=").play(); } catch(e) {}
       }
     }
+  }
+
+  // ===== Priv chips bar =====
+  var privChipsEl = $("priv-chips");
+
+  function renderPrivChips() {
+    privChipsEl.innerHTML = "";
+    Object.keys(privados).forEach(function(nick) {
+      if (privados[nick].msgs.length === 0 && !privados[nick].noLeidos) return;
+      var chip = document.createElement("span");
+      chip.className = "priv-chip" + (privadoCon === nick ? " activo" : "");
+      chip.textContent = "🔒 " + nick;
+      if (privados[nick].noLeidos > 0 && privadoCon !== nick) {
+        var badge = document.createElement("span");
+        badge.className = "unread";
+        badge.textContent = privados[nick].noLeidos;
+        chip.appendChild(badge);
+      }
+      chip.addEventListener("click", function() {
+        privados[nick].noLeidos = 0;
+        renderPrivChips();
+        abrirPrivado(nick);
+      });
+      privChipsEl.appendChild(chip);
+    });
   }
 
   // ===== Usuarios =====
@@ -270,12 +299,10 @@
 
         if (u.nick !== NICK) {
           item.addEventListener("click", function() {
-            var acc = SOY_MOD
-              ? prompt("Acción con " + u.nick + ":\n1. Expulsar\n2. Silenciar\n3. Banear\n4. Hacer moderador\n5. Chat privado", "5")
-              : prompt("Acción con " + u.nick + ":\n1. Chat privado\n2. Reportar", "1");
-            if (!acc) return;
-            var idx = parseInt(acc, 10);
             if (SOY_MOD) {
+              var acc = prompt("Acción con " + u.nick + ":\n1. Expulsar\n2. Silenciar\n3. Banear\n4. Hacer moderador\n5. Chat privado", "5");
+              if (!acc) return;
+              var idx = parseInt(acc, 10);
               if (idx === 1) accionMod(u.nick, "kick");
               else if (idx === 2) {
                 var mins = parseInt(prompt("Minutos de silencio:", "5"), 10);
@@ -286,7 +313,7 @@
               } else if (idx === 4) accionMod(u.nick, "mod");
               else if (idx === 5) abrirPrivado(u.nick);
             } else {
-              if (idx === 1) abrirPrivado(u.nick);
+              abrirPrivado(u.nick);
             }
           });
         }
@@ -336,35 +363,124 @@
   });
 
   // ===== Cámara =====
-  $("btn-camera").addEventListener("click", function() {
+  var camModal = $("cam-modal");
+  var camVideo = $("cam-video");
+  var camCanvas = $("cam-canvas");
+  var camCapture = $("cam-capture");
+  var camCancel = $("cam-cancel");
+  var camFlip = $("cam-flip");
+  var camModePhoto = $("cam-mode-photo");
+  var camModeVideo = $("cam-mode-video");
+  var camStream = null;
+  var camFacing = "user";
+  var camMode = "photo"; // "photo" | "video"
+  var camRecorder = null;
+  var camChunks = [];
+
+  function camStart() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       anadirMensaje({tipo:"sys", texto:"Tu navegador no permite la cámara."});
       return;
     }
-    navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:320},height:{ideal:240}},audio:false})
+    var constraints = {video:{facingMode:camFacing, width:{ideal:640}, height:{ideal:480}}, audio:false};
+    navigator.mediaDevices.getUserMedia(constraints)
       .then(function(stream) {
-        var video = document.createElement("video");
-        video.srcObject = stream;
-        video.muted = true;
-        video.playsInline = true;
-        video.play();
-        var canvas = document.createElement("canvas");
-        canvas.width = 320;
-        canvas.height = 240;
-        setTimeout(function() {
-          var ctx = canvas.getContext("2d");
-          ctx.drawImage(video, 0, 0, 320, 240);
-          stream.getTracks().forEach(function(t) { t.stop(); });
-          var datos = canvas.toDataURL("image/jpeg", 0.85);
-          archivoSeleccionado = {nombre:"foto-camara.jpg", mime:"image/jpeg", datos:datos};
-          adjuntoName.textContent = "foto-camara.jpg";
-          adjuntoBar.classList.remove("hidden");
-          anadirMensaje({tipo:"sys", texto:"📸 Foto capturada. Presiona Enviar."});
-        }, 1500);
+        camStream = stream;
+        camVideo.srcObject = stream;
+        camModal.classList.remove("hidden");
+        camUpdateMode();
       })
       .catch(function(err) {
         anadirMensaje({tipo:"sys", texto:"No se pudo abrir la cámara: " + err.message});
       });
+  }
+
+  function camStop() {
+    if (camStream) {
+      camStream.getTracks().forEach(function(t) { t.stop(); });
+      camStream = null;
+    }
+    camVideo.srcObject = null;
+    camModal.classList.add("hidden");
+    camMode = "photo";
+  }
+
+  function camUpdateMode() {
+    camModePhoto.classList.toggle("activo", camMode === "photo");
+    camModeVideo.classList.toggle("activo", camMode === "video");
+    camCapture.textContent = camMode === "photo" ? "●" : "🔴";
+  }
+
+  $("btn-camera").addEventListener("click", function() {
+    camFacing = "user";
+    camMode = "photo";
+    camStart();
+  });
+
+  camCancel.addEventListener("click", camStop);
+
+  camFlip.addEventListener("click", function() {
+    camFacing = camFacing === "user" ? "environment" : "user";
+    if (camStream) {
+      camStream.getTracks().forEach(function(t) { t.stop(); });
+    }
+    camStart();
+  });
+
+  camModePhoto.addEventListener("click", function() {
+    if (camMode === "photo") return;
+    camMode = "photo";
+    camUpdateMode();
+  });
+
+  camModeVideo.addEventListener("click", function() {
+    if (camMode === "video") return;
+    camMode = "video";
+    camUpdateMode();
+  });
+
+  camCapture.addEventListener("click", function() {
+    if (camMode === "photo") {
+      camCanvas.width = camVideo.videoWidth || 640;
+      camCanvas.height = camVideo.videoHeight || 480;
+      var ctx = camCanvas.getContext("2d");
+      ctx.drawImage(camVideo, 0, 0, camCanvas.width, camCanvas.height);
+      var datos = camCanvas.toDataURL("image/jpeg", 0.85);
+      archivoSeleccionado = {nombre:"foto-camara.jpg", mime:"image/jpeg", datos:datos};
+      adjuntoName.textContent = "foto-camara.jpg";
+      adjuntoBar.classList.remove("hidden");
+      camStop();
+      anadirMensaje({tipo:"sys", texto:"📸 Foto capturada. Presiona Enviar."});
+    } else {
+      if (camRecorder && camRecorder.state === "recording") {
+        camRecorder.stop();
+        camCapture.textContent = "🔴";
+        return;
+      }
+      camChunks = [];
+      try {
+        var mr = window.MediaRecorder || window.mozMediaRecorder || window.webkitMediaRecorder;
+        if (!mr) { anadirMensaje({tipo:"sys", texto:"Tu navegador no graba video."}); return; }
+        camRecorder = new mr(camStream);
+        camRecorder.ondataavailable = function(e) { if (e.data.size > 0) camChunks.push(e.data); };
+        camRecorder.onstop = function() {
+          var blob = new Blob(camChunks, {type:"video/webm"});
+          var reader = new FileReader();
+          reader.onload = function() {
+            archivoSeleccionado = {nombre:"video-camara.webm", mime:"video/webm", datos:reader.result};
+            adjuntoName.textContent = "video-camara.webm";
+            adjuntoBar.classList.remove("hidden");
+            camStop();
+            anadirMensaje({tipo:"sys", texto:"🎬 Video capturado. Presiona Enviar."});
+          };
+          reader.readAsDataURL(blob);
+        };
+        camRecorder.start();
+        camCapture.textContent = "⏹";
+      } catch(e) {
+        anadirMensaje({tipo:"sys", texto:"Error al grabar: " + e.message});
+      }
+    }
   });
 
   // ===== Emoji =====

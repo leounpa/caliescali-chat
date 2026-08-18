@@ -64,9 +64,31 @@ body{display:flex;flex-direction:column;font-family:'Open Sans',Arial,sans-serif
 .input-group input[type=text]{flex:1}
 .input-group .file-input{display:none}
 
+.priv-chips{display:flex;gap:6px;flex-wrap:wrap;padding:4px 16px;background:#fff;border-bottom:1px solid #eee;flex-shrink:0}
+.priv-chips:empty{display:none}
+.priv-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;font-size:.82em;cursor:pointer;border:1px solid #ddd;background:#fff;transition:background .15s}
+.priv-chip:hover{background:#f0f0f0}
+.priv-chip.activo{background:#3730a3;color:#fff;border-color:#3730a3}
+.priv-chip .unread{background:#e3222a;color:#fff;border-radius:50%;min-width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:.7em;font-weight:700}
+
+.cam-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.cam-modal.hidden{display:none}
+.cam-modal video{max-width:90vw;max-height:50vh;border-radius:8px;background:#000}
+.cam-modal canvas{display:none}
+.cam-controls{display:flex;gap:10px;align-items:center}
+.cam-controls button{padding:8px 16px;border:none;border-radius:8px;font-size:.95em;cursor:pointer;font-weight:600}
+.cam-controls .btn-capture{background:#e3222a;color:#fff;width:56px;height:56px;border-radius:50%;font-size:1.3em;display:flex;align-items:center;justify-content:center}
+.cam-controls .btn-capture.recording{animation:pulse 1s infinite}
+.cam-controls .btn-mode{background:#333;color:#fff}
+.cam-controls .btn-mode.activo{background:#3730a3}
+.cam-controls .btn-flip{background:#555;color:#fff}
+.cam-controls .btn-cancel{background:#888;color:#fff}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
 @media(max-width:768px){
   .chat-usuarios{position:absolute;right:0;top:0;bottom:0;width:260px;z-index:10;box-shadow:-2px 0 8px rgba(0,0,0,.2);display:none}
   .chat-usuarios.abierto{display:flex}
+  .priv-chips{padding:4px 10px}
 }
 </style>
 </head>
@@ -116,6 +138,9 @@ body{display:flex;flex-direction:column;font-family:'Open Sans',Arial,sans-serif
   <span style="font-weight:700" id="priv-title"></span>
 </div>
 
+<!-- Private chats chips -->
+<div class="priv-chips" id="priv-chips"></div>
+
 <!-- Body -->
 <div class="chat-body">
   <div class="chat-mensajes" id="mensajes">
@@ -151,6 +176,19 @@ body{display:flex;flex-direction:column;font-family:'Open Sans',Arial,sans-serif
     <input type="text" id="msg-input" maxlength="500" placeholder="Escribe tu mensaje, parce..." autocomplete="off" disabled class="input">
     <button type="submit" id="btn-send" disabled class="button is-success">Enviar</button>
   </form>
+</div>
+
+<!-- Camera modal -->
+<div class="cam-modal hidden" id="cam-modal">
+  <video id="cam-video" autoplay playsinline muted></video>
+  <canvas id="cam-canvas" width="640" height="480"></canvas>
+  <div class="cam-controls">
+    <button type="button" class="btn-cancel" id="cam-cancel">✕ Cancelar</button>
+    <button type="button" class="btn-mode" id="cam-mode-photo" title="Foto">📷 Foto</button>
+    <button type="button" class="btn-capture" id="cam-capture" title="Capturar">●</button>
+    <button type="button" class="btn-mode" id="cam-mode-video" title="Video">🎬 Video</button>
+    <button type="button" class="btn-flip" id="cam-flip" title="Voltear cámara">🔄</button>
+  </div>
 </div>
 
 <script src="js/chat.js"></script>
