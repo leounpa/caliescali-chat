@@ -2,10 +2,12 @@
 (function () {
   "use strict";
 
+  function getCookie(e){for(var t=e+"=",n=document.cookie.split(";"),i=0;i<n.length;i++){for(var o=n[i];" "==o.charAt(0);)o=o.substring(1);if(0==o.indexOf(t))return o.substring(t.length,o.length)}return""}
+
   var PARAMS = new URLSearchParams(location.search);
-  var NICK = (PARAMS.get("nick") || localStorage.getItem("parcheNick") || "").trim().slice(0, 24);
+  var NICK = (getCookie("nick") || PARAMS.get("nick") || localStorage.getItem("parcheNick") || "").trim().slice(0, 24);
   var SALA = (PARAMS.get("sala") || localStorage.getItem("parcheSala") || "cali").trim();
-  var GENERO = (PARAMS.get("genero") || "").trim();
+  var GENERO = (getCookie("genero") || PARAMS.get("genero") || "").trim();
   var MI_AVATAR = "🙂";
   var MI_COLOR = "#007a4d";
   var TOKEN = null;
@@ -57,6 +59,7 @@
   // Guardar preferencias
   localStorage.setItem("parcheNick", NICK);
   localStorage.setItem("parcheSala", SALA);
+  localStorage.setItem("parcheGenero", GENERO);
 
   function esc(t) {
     return t.replace(/[&<>"']/g, function(c) {

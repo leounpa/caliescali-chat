@@ -478,6 +478,51 @@ var servidor = http.createServer(function(req, res) {
     return;
   }
 
+  // POST /webchat — Recepción de formulario estilo DaleChat
+  if (ruta === "/webchat" && req.method === "POST") {
+    var body = "";
+    req.on("data", function(chunk) { body += chunk; });
+    req.on("end", function() {
+      var params = {};
+      body.split("&").forEach(function(p) {
+        var kv = p.split("=");
+        if (kv.length === 2) params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1]);
+      });
+      var nick = (params.nick || "").trim().slice(0, MAX_NICK);
+      var genero = params.genero || "No especificar";
+      var rememberMe = params.remember_me === "on" || params.remember_me === "true";
+      var sala = "cali";
+      if (params.idNC === "salsa") sala = "salsa";
+      else if (params.idNC === "rumba") sala = "rumba";
+      else if (params.idNC === "colombia") sala = "colombia";
+      else if (params.idNC === "general") sala = "general";
+      else if (params.idNC === "amistad") sala = "amistad";
+
+      if (!nick || nick.length < 2) {
+        res.writeHead(302, { "Location": "/index.html?error=nick" });
+        res.end();
+        return;
+      }
+
+      var cookies = [];
+      if (rememberMe) {
+        cookies.push("nick=" + encodeURIComponent(nick) + "; Path=/; Max-Age=31536000; SameSite=Lax");
+        cookies.push("genero=" + encodeURIComponent(genero) + "; Path=/; Max-Age=31536000; SameSite=Lax");
+      } else {
+        cookies.push("nick=; Path=/; Max-Age=0");
+        cookies.push("genero=; Path=/; Max-Age=0");
+      }
+
+      var redirectUrl = "/chat.html?nick=" + encodeURIComponent(nick) + "&sala=" + encodeURIComponent(sala) + "&genero=" + encodeURIComponent(genero);
+      res.writeHead(302, {
+        "Location": redirectUrl,
+        "Set-Cookie": cookies
+      });
+      res.end();
+    });
+    return;
+  }
+
   // === Archivos estáticos ===
   var raiz = path.resolve(PUBLIC);
   var archivo = path.join(raiz, ruta);

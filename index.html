@@ -8,29 +8,10 @@
 <meta name="description" content="Chatea gratis en El Parche de Cali, chat online para hacer amigos y chatear sin registro y gratis."/>
 <meta name="keywords" content="chat, el parche de cali, chat cali, chat gratis, chatear, chat sin Registro, chat online, chat colombia">
 <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
-<meta name="theme-color" content="#1a1a2e"/>
+<meta name="theme-color" content="#363636"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-<link rel="stylesheet" href="https://dalechatea.me/font-awesome.min.css">
-<style>
-.bd-links{display:grid;gap:1em;grid-template-columns:repeat(auto-fill,minmax(20em,1fr))}
-.bd-link{border-radius:6px;color:#7a7a7a;display:flex;padding:1em}
-.bd-link:hover{background-color:#FFEBED;color:#555}
-.bd-link-icon{display:flex;align-items:center;flex-shrink:0;font-size:2em;margin-right:.75em}
-.bd-link-title{color:#363636;font-weight:600;line-height:1.5}
-.bd-link-subtitle{font-size:.75em}
-.roundedi{border-radius:2.25rem}
-.site-footer{border-top:1px solid #e8edf3;margin-top:28px;padding:28px 14px 22px}
-.site-footer .container{max-width:950px}
-.footer-grid{display:grid;gap:20px;grid-template-columns:repeat(3,minmax(0,1fr));text-align:left}
-.footer-links h2{color:#253247;font-size:.9rem;font-weight:700;letter-spacing:0;margin:0 0 10px}
-.footer-links a{color:#0b7285;display:block;font-size:.94rem;line-height:1.35;margin:0 0 8px;text-decoration:none}
-.footer-links a:hover{color:#087f83;text-decoration:underline}
-.footer-bottom{border-top:1px solid #edf1f5;color:#536070;font-size:.92rem;line-height:1.55;margin-top:18px;padding-top:16px;text-align:center}
-.footer-bottom p{margin:0 0 8px}
-.footer-bottom a{color:#0b7285;font-weight:700;text-decoration:none}
-.footer-bottom a:hover{text-decoration:underline}
-@media (max-width:640px){.site-footer{padding:24px 16px 20px}.footer-grid{grid-template-columns:1fr;gap:14px;text-align:center}.footer-links a{margin-bottom:7px}}
-</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/estilo.css">
 </head>
 <body>
 <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
@@ -67,39 +48,33 @@
     <div class="container">
       <h1 class="title is-size-3 has-text-danger-dark">El Parche de Cali</h1>
       <p class="is-italic is-size-6">
-        Chatea gratis y sin registro, haz amigos online, conoce gente para chatear gratis y hacer contactos o relaciones. Comunidad de chat activa desde el 2026, estás en el sitio oficial de <b>El Parche de Cali</b>, descubre las salas de chat gratis y disfruta de un buen momento de chat online. La sucursal del cielo en linea. &#191;Dale, Chatea!
+        Chatea gratis y sin registro, haz amigos online, conoce gente para chatear gratis y hacer contactos o relaciones. Comunidad de chat activa desde el 2026, estas en el sitio oficial de <b>El Parche de Cali</b>, descubre las salas de chat gratis y disfruta de un buen momento de chat online. La sucursal del cielo en linea. Dale, Chatea!
       </p>
       <div class="columns is-centered mt-2">
         <div class="column is-6">
-          <form id="chat-form" class="box has-background-white" method="POST">
+          <form action="/webchat" method="POST" class="box has-background-white" id="chat-form">
             <div class="field" id="form-error" style="display:none;font-weight:bold;color:red"></div>
             <div class="field">
               <div class="control has-icons-left">
                 <input id="nick" name="nick" type="text" placeholder="Escribe tu nombre o apodo" class="input" value="">
                 <span class="icon is-small is-left">
-                  <i class="fa fa-user-circle"></i>
+                  <i class="fas fa-user-circle"></i>
                 </span>
               </div>
             </div>
             <div class="field">
               Soy:
               <div class="select is-small">
-                <select id="genero" class="select mr-2">
+                <select id="genero" name="genero">
                   <option>Hombre</option>
                   <option>Mujer</option>
                   <option selected>No especificar</option>
                 </select>
               </div>
-              <div class="select is-small ml-2">
-                <select id="sala" class="select">
-                  <option value="cali" selected>#Cali</option>
-                  <option value="salsa">#Salsa</option>
-                  <option value="rumba">#Rumba</option>
-                  <option value="colombia">#Colombia</option>
-                  <option value="general">#General</option>
-                  <option value="amistad">#Amistad</option>
-                </select>
-              </div>
+              <input name="registered" id="registered" type="checkbox">
+              <label for="registered" class="mr-2">Registrado</label>
+              <input name="remember_me" id="remember_me" type="checkbox">
+              <label for="remember_me">Recordarme</label>
             </div>
             <div class="field" id="tnc_field">
               <input name="tnc" id="tnc" checked="checked" type="checkbox">
@@ -110,6 +85,10 @@
                 Chatea gratis ya
               </button>
             </div>
+            <input type="hidden" name="idNC" id="idNC" value="cali">
+            <input type="hidden" name="isHot" value="no">
+            <input type="hidden" name="chats" id="chats-hidden" value="chat1">
+            <input type="hidden" name="autoConnect" value="true">
           </form>
         </div>
       </div>
@@ -122,43 +101,43 @@
     <h2 class="title is-3">Salas de chat mas visitadas</h2>
     <div class="content">
       <nav class="bd-links" itemscope itemtype="http://schema.org/SiteNavigationElement">
-        <a class="bd-link" href="#entrada" data-sala="cali" title="Entrar al chat de Cali">
-          <span class="bd-link-icon">&#128131;</span>
+        <a class="bd-link" href="#entrada" data-sala="cali" data-idnc="cali" title="Entrar al chat de Cali">
+          <span class="bd-link-icon"><i class="fas fa-city fa-2x"></i></span>
           <div class="bd-link-body">
             <h2 class="bd-link-title is-size-4">Chat de Cali</h2>
             <div class="bd-link-subtitle">El parche principal de los calenos y calenas.</div>
           </div>
         </a>
-        <a class="bd-link" href="#entrada" data-sala="salsa" title="Entrar al chat de Salsa">
-          <span class="bd-link-icon">&#127925;</span>
+        <a class="bd-link" href="#entrada" data-sala="salsa" data-idnc="salsa" title="Entrar al chat de Salsa">
+          <span class="bd-link-icon"><i class="fas fa-music fa-2x"></i></span>
           <div class="bd-link-body">
             <h2 class="bd-link-title is-size-4">Chat de Salsa</h2>
             <div class="bd-link-subtitle">Ritmo, sabor y las mejores conversaciones salseras.</div>
           </div>
         </a>
-        <a class="bd-link" href="#entrada" data-sala="rumba" title="Entrar al chat de Rumba">
-          <span class="bd-link-icon">&#129689;</span>
+        <a class="bd-link" href="#entrada" data-sala="rumba" data-idnc="rumba" title="Entrar al chat de Rumba">
+          <span class="bd-link-icon"><i class="fas fa-champagne-glasses fa-2x"></i></span>
           <div class="bd-link-body">
             <h2 class="bd-link-title is-size-4">Chat de Rumba</h2>
             <div class="bd-link-subtitle">Para armar la rumba y conocer gente fiestera.</div>
           </div>
         </a>
-        <a class="bd-link" href="#entrada" data-sala="colombia" title="Entrar al chat de Colombia">
-          <span class="bd-link-icon">&#127464;&#127476;</span>
+        <a class="bd-link" href="#entrada" data-sala="colombia" data-idnc="colombia" title="Entrar al chat de Colombia">
+          <span class="bd-link-icon"><i class="fas fa-flag fa-2x"></i></span>
           <div class="bd-link-body">
             <h2 class="bd-link-title is-size-4">Chat de Colombia</h2>
-            <div class="bd-link-subtitle">Conoce personas de todo el pais, &#161;el aguinaldo!</div>
+            <div class="bd-link-subtitle">Conoce personas de todo el pais, el aguinaldo!</div>
           </div>
         </a>
-        <a class="bd-link" href="#entrada" data-sala="general" title="Entrar al chat general">
-          <span class="bd-link-icon">&#128172;</span>
+        <a class="bd-link" href="#entrada" data-sala="general" data-idnc="general" title="Entrar al chat general">
+          <span class="bd-link-icon"><i class="fas fa-comments fa-2x"></i></span>
           <div class="bd-link-body">
             <h2 class="bd-link-title is-size-4">Chat General</h2>
             <div class="bd-link-subtitle">Chatea sobre cualquier tema en buena compania.</div>
           </div>
         </a>
-        <a class="bd-link" href="#entrada" data-sala="amistad" title="Entrar al chat de Amistad">
-          <span class="bd-link-icon">&#129309;</span>
+        <a class="bd-link" href="#entrada" data-sala="amistad" data-idnc="amistad" title="Entrar al chat de Amistad">
+          <span class="bd-link-icon"><i class="fas fa-handshake fa-2x"></i></span>
           <div class="bd-link-body">
             <h2 class="bd-link-title is-size-4">Chat de Amistad</h2>
             <div class="bd-link-subtitle">Para hacer amigos y amigas con buena vibra.</div>
@@ -175,7 +154,7 @@
     <div class="tile is-ancestor">
       <div class="tile is-parent">
         <article class="tile is-child notification is-primary">
-          <p class="title"><i class="fa fa-comments-o" aria-hidden="true"></i> Reglas basicas de nuestras salas de chat</p>
+          <p class="title"><i class="fas fa-comments" aria-hidden="true"></i> Reglas basicas de nuestras salas de chat</p>
           <div class="content">
             <p>El Parche de Cali posee una serie de normas y reglas que se deben respetar en las salas de chat para evitar inconvenientes y posibles sanciones.</p>
             <ol>
@@ -188,13 +167,13 @@
       </div>
       <div class="tile is-parent is-vertical">
         <article class="tile is-child notification is-primary">
-          <p class="title"><i class="fa fa-shield" aria-hidden="true"></i> La seguridad ante todo</p>
+          <p class="title"><i class="fas fa-shield" aria-hidden="true"></i> La seguridad ante todo</p>
           <div class="content">
             <p>Mientras este en el chat, no publique bajo ningun motivo sus datos personales. Tampoco escriba su direccion postal y/o telefono. El contenido ilegal (en especial el de menores) esta prohibido y es baneado permanentemente.</p>
           </div>
         </article>
         <article class="tile is-child notification is-primary">
-          <p class="title"><i class="fa fa-envelope" aria-hidden="true"></i> Contacto</p>
+          <p class="title"><i class="fas fa-envelope" aria-hidden="true"></i> Contacto</p>
           <div class="content">
             <p>Si quiere sugerir una nueva sala de chat o simplemente comunicarse por alguna inquietud, puede hacerlo a traves de la seccion de ayuda o contactando a los moderadores del chat.</p>
           </div>
@@ -202,7 +181,7 @@
       </div>
       <div class="tile is-parent">
         <article class="tile is-child notification is-primary">
-          <p class="title"><i class="fa fa-universal-access" aria-hidden="true"></i> Para dispositivos moviles</p>
+          <p class="title"><i class="fas fa-universal-access" aria-hidden="true"></i> Para dispositivos moviles</p>
           <div class="content">
             <p>El Parche de Cali es un sitio totalmente adaptable y responsivo, que puedes utilizar facilmente desde cualquier dispositivo. No importa que este utilizando un dispositivo movil Android o Apple, El Parche de Cali es accesible desde ambos. La sala de chat movil es gratis y sin ningun tipo de registro, solo ingresa un nick y diviertete con chicas y chicos de Cali, Colombia y muchos lugares mas!. Ademas, en las salas tambien puedes escuchar la radio.</p>
           </div>
@@ -244,7 +223,7 @@
 </footer>
 
 <script>
-function setCookie(e,t,n){var i=new Date;i.setTime(i.getTime()+24*n*60*60*1e3);var o="expires="+i.toUTCString();document.cookie=e+"="+t+";"+o+";path=/; secure"}function getCookie(e){for(var t=e+"=",n=document.cookie.split(";"),i=0;i<n.length;i++){for(var o=n[i];" "==o.charAt(0);)o=o.substring(1);if(0==o.indexOf(t))return o.substring(t.length,o.length)}return""}function handleForm(){var e=document.getElementById("nick").value.trim(),t=document.getElementById("genero").value,n=document.getElementById("sala").value,o=document.getElementById("form-error"),d=document.getElementById("chat-form"),r=document.getElementById("tnc").checked;if(void 0===e||0===e.length)return o.style.display="block",o.innerHTML="Ingrese su apodo",!1;if(!/^[A-Za-z0-9_.\-áéíóúüñÁÉÍÓÚÜÑ\{\}\]\[\|]+$/.test(e))return o.style.display="block",o.innerHTML="El apodo contiene caracteres no permitidos.",!1;if(!r)return o.style.display="block",o.innerHTML="Por favor, acepte nuestros terminos y politicas.",!1;location.href="chat.html?nick="+encodeURIComponent(e)+"&sala="+encodeURIComponent(n)+"&genero="+encodeURIComponent(t)}!function(){var e=document.createElement("link");e.href="https://dalechatea.me/font-awesome.min.css",e.rel="stylesheet",e.type="text/css",document.getElementsByTagName("head")[0].appendChild(e)}(),document.addEventListener("DOMContentLoaded",function(){var e=document.getElementById("navTouch");e&&e.addEventListener("click",function(){var t=e.getAttribute("data-target"),n=document.getElementById(t);e.classList.toggle("is-active"),n.classList.toggle("is-active")});document.getElementById("chat-form").onsubmit=handleForm;document.querySelectorAll(".bd-link").forEach(function(a){a.addEventListener("click",function(){var s=a.getAttribute("data-sala");if(s){var sel=document.getElementById("sala");if(sel)sel.value=s}})});
+function setCookie(e,t,n){var i=new Date;i.setTime(i.getTime()+24*n*60*60*1e3);var o="expires="+i.toUTCString();document.cookie=e+"="+t+";"+o+";path=/;SameSite=Lax"}function getCookie(e){for(var t=e+"=",n=document.cookie.split(";"),i=0;i<n.length;i++){for(var o=n[i];" "==o.charAt(0);)o=o.substring(1);if(0==o.indexOf(t))return o.substring(t.length,o.length)}return""}function handleForm(){var e=document.getElementById("nick").value.trim(),t=document.getElementById("genero").value,n=document.getElementById("form-error"),r=document.getElementById("chat-form"),o=document.getElementById("tnc").checked;if(void 0===e||0===e.length)return n.style.display="block",n.innerHTML="Ingrese su apodo",!1;if(!/^[A-Za-z0-9_.\-áéíóúüñÁÉÍÓÚÜÑ]+$/.test(e))return n.style.display="block",n.innerHTML="El apodo contiene caracteres no permitidos.",!1;if(!o)return n.style.display="block",n.innerHTML="Por favor, acepte nuestros terminos y politicas.",!1;var d=document.getElementById("remember_me").checked;if(d){setCookie("nick",e,1e3);setCookie("genero",t,1e3)}else{setCookie("nick","",0);setCookie("genero","",0)}var a="";"Hombre"==t&&(a="img/avatar-hombre.png"),"Mujer"==t&&(a="img/avatar-mujer.png");var c=document.createElement("input");c.name="icon";c.type="hidden";c.value=a;r.appendChild(c)}document.addEventListener("DOMContentLoaded",function(){var e=document.getElementById("navTouch");e&&e.addEventListener("click",function(){var t=e.getAttribute("data-target"),n=document.getElementById(t);e.classList.toggle("is-active"),n.classList.toggle("is-active")});var t=getCookie("nick"),n=getCookie("genero");document.getElementById("chat-form").onsubmit=handleForm;void 0!==t&&t.length>0&&(document.getElementById("nick").value=t,document.getElementById("remember_me").checked=!0);void 0!==n&&n.length>0&&(document.getElementById("genero").value=n);document.querySelectorAll(".bd-link").forEach(function(a){a.addEventListener("click",function(){var s=a.getAttribute("data-idnc");if(s){document.getElementById("idNC").value=s;var sala=a.getAttribute("data-sala");if(sala)document.getElementById("chats-hidden").value=sala}})})});
 </script>
 </body>
 </html>

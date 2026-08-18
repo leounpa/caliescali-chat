@@ -261,18 +261,19 @@ body {
 .radio-barra {
   display: flex; align-items: center; gap: 8px;
   background: var(--oro); color: var(--tinta);
-  padding: 6px 16px; font-size: 13px; font-weight: 600;
+  padding: 6px 12px; font-size: 13px; font-weight: 600;
+  flex-shrink: 0;
 }
 .radio-play {
   border: 0; background: var(--tinta); color: var(--oro);
   border-radius: 50%; width: 30px; height: 30px;
   font-size: 14px; cursor: pointer; flex-shrink: 0;
 }
-.radio-nombre { white-space: nowrap; }
+.radio-nombre { white-space: nowrap; flex-shrink: 0; }
 .radio-emisoras {
   flex: 1; min-width: 0; border: 0; background: rgba(0,0,0,0.08);
-  color: var(--tinta); border-radius: 6px; padding: 5px 8px;
-  font-size: 13px; font-weight: 600; max-width: 340px;
+  color: var(--tinta); border-radius: 6px; padding: 5px 6px;
+  font-size: 12px; font-weight: 600; max-width: 340px;
 }
 body.en-privado .radio-barra { background: var(--rojo); color: #fff; }
 body.en-privado .radio-play { background: #fff; color: var(--rojo); }
@@ -282,9 +283,9 @@ body.en-privado .radio-emisoras option { color: var(--tinta); }
 /* ===== Sala de chat ===== */
 body.sala { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; background: #e9e5dc; }
 
-.sala-cabecera { background: var(--tinta); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
-.sala-cabecera .contenedor { display: flex; align-items: center; justify-content: space-between; padding-top: 8px; padding-bottom: 8px; gap: 10px; }
-.sala-info { display: flex; align-items: center; gap: 10px; }
+.sala-cabecera { background: var(--tinta); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.25); flex-shrink: 0; }
+.sala-cabecera .contenedor { display: flex; align-items: center; justify-content: space-between; padding-top: 8px; padding-bottom: 8px; gap: 8px; min-height: 48px; }
+.sala-info { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .chip {
   background: rgba(255,255,255,0.14); color: #fff;
   border-radius: 20px; padding: 6px 12px; font-size: 13px;
@@ -292,13 +293,15 @@ body.sala { display: flex; flex-direction: column; height: 100vh; height: 100dvh
 .btn-salir {
   color: #fff; text-decoration: none; font-size: 13px; font-weight: 700;
   background: var(--rojo); padding: 7px 14px; border-radius: 6px;
+  flex-shrink: 0;
 }
 
-.sala-cuerpo { flex: 1; display: grid; grid-template-columns: 1fr 240px; gap: 14px; padding: 14px 16px; min-height: 0; }
+.sala-cuerpo { flex: 1; display: grid; grid-template-columns: 1fr 240px; gap: 14px; padding: 14px 16px; min-height: 0; overflow: hidden; }
 
 .panel-mensajes {
   background: var(--tarjeta); border-radius: 12px; box-shadow: var(--sombra);
   overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px;
+  min-height: 0;
 }
 .mensaje { display: flex; gap: 8px; font-size: 14px; line-height: 1.45; }
 .mensaje .nick { font-weight: 800; white-space: nowrap; }
@@ -325,16 +328,18 @@ body.sala { display: flex; flex-direction: column; height: 100vh; height: 100dvh
   color: #aaa; font-style: italic; font-size: 13px; background: transparent;
 }
 
-.sala-pie { background: var(--tinta); padding: 10px 0; }
-.form-mensaje { display: flex; gap: 10px; padding-top: 4px; padding-bottom: 4px; }
+.sala-pie { background: var(--tinta); padding: 8px 0; flex-shrink: 0; width: 100%; }
+.form-mensaje { display: flex; align-items: center; gap: 6px; padding: 4px 0; width: 100%; box-sizing: border-box; }
 #mensaje-input {
-  flex: 1; border: 0; border-radius: 8px; padding: 13px 16px;
+  flex: 1 1 0%; border: 0; border-radius: 8px; padding: 12px 14px;
   font-size: 15px; outline: 0; background: #fff; color: var(--tinta);
+  min-width: 0; width: 100%; box-sizing: border-box;
 }
 #mensaje-input:disabled { opacity: .6; }
 #btn-enviar {
   background: var(--verde); color: #fff; border: 0; border-radius: 8px;
-  padding: 0 22px; font-size: 15px; font-weight: 800; cursor: pointer;
+  padding: 0 16px; font-size: 14px; font-weight: 800; cursor: pointer;
+  flex-shrink: 0; min-width: 60px; height: 44px;
 }
 #btn-enviar:disabled { opacity: .5; cursor: not-allowed; }
 
@@ -391,24 +396,25 @@ body.en-privado .sala-cabecera { background: var(--rojo); }
 }
 
 /* ===== Adjuntar archivo ===== */
-.adjuntar-wrap { position: relative; display: flex; align-items: center; }
+.adjuntar-wrap { position: relative; display: flex; align-items: center; flex-shrink: 0; }
 .btn-adjuntar {
   display: flex; align-items: center; justify-content: center;
-  width: 46px; height: 46px; border-radius: 50%;
-  background: var(--verde); color: #fff; font-size: 20px; cursor: pointer;
+  width: 42px; height: 42px; border-radius: 50%;
+  background: var(--verde); color: #fff; font-size: 18px; cursor: pointer;
   flex: 0 0 auto;
 }
 .btn-adjuntar:active { transform: scale(.94); }
 
 /* ===== Cámara en vivo ===== */
-.cam-controls { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.cam-controls { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; flex-shrink: 0; }
 .btn-cam {
   display: flex; align-items: center; justify-content: center;
-  width: 46px; height: 46px; border-radius: 50%;
-  background: var(--rojo); color: #fff; font-size: 20px; cursor: pointer;
+  width: 42px; height: 42px; border-radius: 50%;
+  background: var(--rojo); color: #fff; font-size: 18px; cursor: pointer;
   flex: 0 0 auto;
 }
 .btn-cam-foto { background: #b45309; }
+.btn-cam-grabar { background: #7c3aed; }
 .btn-cam:active { transform: scale(.94); }
 
 .videos-panel {
@@ -440,9 +446,9 @@ body.en-privado .sala-cabecera { background: var(--rojo); }
 /* ===== Emoji picker ===== */
 .btn-emoji {
   display: flex; align-items: center; justify-content: center;
-  width: 46px; height: 46px; border-radius: 50%;
-  background: var(--tinta); color: #fff; font-size: 20px; cursor: pointer;
-  border: 0; flex: 0 0 auto;
+  width: 42px; height: 42px; border-radius: 50%;
+  background: var(--tinta); color: #fff; font-size: 18px; cursor: pointer;
+  border: 0; flex: 0 0 auto; flex-shrink: 0;
 }
 .btn-emoji:active { transform: scale(.94); }
 .emoji-panel {
@@ -503,35 +509,85 @@ body.en-privado .sala-cabecera { background: var(--rojo); }
   border-radius: 20px; padding: 6px 12px; font-size: 15px; cursor: pointer;
 }
 
+/* ===== Badges y roles ===== */
+.badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 11px; font-weight: 700; padding: 2px 7px;
+  border-radius: 10px; white-space: nowrap; vertical-align: middle;
+  line-height: 1.2;
+}
+.badge-nuevo { background: #e0e7ff; color: #3730a3; }
+.badge-activo { background: #d1fae5; color: #065f46; }
+.badge-veterano { background: #fef3c7; color: #92400e; }
+.badge-leyenda { background: #fce7f3; color: #9d174d; }
+.badge-mod { background: #fee2e2; color: #991b1b; }
+.badge-admin { background: var(--rojo); color: #fff; }
+
+.badge-leyenda::before { content: "⭐"; }
+.badge-veterano::before { content: "🏅"; }
+.badge-activo::before { content: "✅"; }
+.badge-nuevo::before { content: "🌱"; }
+.badge-mod::before { content: "🛡️"; }
+.badge-admin::before { content: "👑"; }
+
+.panel-usuarios li .badge { margin-left: 4px; }
+.mensaje .nick .badge { font-size: 10px; margin-left: 4px; }
+
+/* Panel de puntos (tooltip) */
+.puntos-tooltip {
+  position: absolute; background: var(--tinta); color: #fff;
+  padding: 8px 12px; border-radius: 8px; font-size: 12px;
+  white-space: nowrap; z-index: 200; pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.puntos-tooltip::after {
+  content: ""; position: absolute; top: 100%; left: 20px;
+  border: 6px solid transparent; border-top-color: var(--tinta);
+}
+
 /* ===== Móvil ===== */
 @media (max-width: 860px) {
+  body { overflow-x: hidden; }
   .btn-usuarios { display: inline-flex; }
   .btn-cerrar-usuarios { display: block; }
-  .sala-cuerpo { grid-template-columns: 1fr; padding: 8px 10px; }
+  .sala-cuerpo { grid-template-columns: 1fr; padding: 6px 8px; min-height: 0; }
+  .panel-mensajes { min-height: 0; }
   .panel-usuarios {
     display: block;
     position: fixed; top: 0; right: 0; bottom: 0; z-index: 100;
-    width: min(80vw, 300px);
+    width: min(80vw, 280px);
     background: #fff; box-shadow: -8px 0 24px rgba(0,0,0,0.25);
     transform: translateX(100%); transition: transform .22s ease;
     border-radius: 0; padding-top: 14px;
   }
   .panel-usuarios.abierto { transform: translateX(0); }
   .marca-txt small { display: none; }
-  .sala-cabecera .contenedor { gap: 6px; }
+  .sala-cabecera .contenedor { padding: 6px 10px; gap: 6px; }
   .chip { display: none; }
-  .btn-salir { padding: 6px 12px; font-size: 12px; }
+  .btn-salir { padding: 5px 10px; font-size: 12px; }
   .privado-barra { padding: 8px 10px; }
-  .videollamada-iframe { height: 300px; }
-  .btn-emoji { width: 42px; height: 42px; }
-  .form-mensaje { gap: 8px; padding-top: 6px; padding-bottom: 6px; }
-  .btn-adjuntar { width: 42px; height: 42px; }
-  .btn-cam { width: 42px; height: 42px; }
-  .cam-controls { gap: 6px; }
-  .video-remoto { width: 96px; }
-  #mensaje-input { font-size: 16px; padding: 12px 14px; }
-  #btn-enviar { padding: 0 16px; font-size: 14px; }
-  .mensaje .archivo-sel { max-width: 200px; }
+  .videollamada-iframe { height: 280px; }
+  .form-mensaje { gap: 4px; padding: 4px 0; align-items: center; flex-wrap: nowrap; }
+  .cam-controls { gap: 3px; }
+  .cam-controls .btn-cam,
+  .cam-controls .btn-cam-foto,
+  .cam-controls .btn-cam-grabar,
+  .cam-controls .btn-adjuntar,
+  .cam-controls .btn-emoji { width: 36px; height: 36px; font-size: 16px; }
+  .video-remoto { width: 80px; }
+  .mensaje .archivo-sel { max-width: 180px; }
+  #mensaje-input { font-size: 16px; padding: 10px 12px; border-radius: 6px; }
+  #btn-enviar { padding: 0 12px; font-size: 13px; min-width: 55px; height: 36px; border-radius: 6px; }
+  .radio-barra { padding: 4px 10px; gap: 6px; }
+  .radio-play { width: 26px; height: 26px; font-size: 12px; }
+  .radio-nombre { font-size: 12px; }
+  .radio-emisoras { font-size: 11px; padding: 4px 6px; }
+  .panel-usuarios li { padding: 5px 6px; font-size: 13px; gap: 4px; }
+  .panel-usuarios li .btn-candado { font-size: 12px; padding: 2px 3px; }
+  .panel-usuarios li .btn-menu { font-size: 12px; padding: 2px 3px; }
+  .mensaje { font-size: 13px; gap: 6px; }
+  .mensaje .nick { font-size: 13px; }
+  .mensaje .avatar-mini { font-size: 14px; }
 }
 
 @media (max-width: 640px) {
@@ -547,3 +603,84 @@ body.en-privado .sala-cabecera { background: var(--rojo); }
   .footer-grid { grid-template-columns: 1fr; text-align: center; }
   .salas-grid { grid-template-columns: 1fr; }
 }
+
+@media (max-width: 480px) {
+  .sala-cabecera .contenedor { padding: 5px 8px; }
+  .marca-ico { font-size: 22px; }
+  .marca-txt strong { font-size: 18px; }
+  .btn-salir { padding: 4px 8px; font-size: 11px; }
+  .sala-cuerpo { padding: 4px 6px; gap: 4px; }
+  .panel-mensajes { padding: 8px; border-radius: 8px; }
+  .sala-pie { padding: 4px 0; }
+  .form-mensaje { gap: 3px; padding: 2px 0; flex-wrap: nowrap; overflow: hidden; }
+  .cam-controls { gap: 2px; }
+  .cam-controls .btn-cam,
+  .cam-controls .btn-cam-foto,
+  .cam-controls .btn-cam-grabar,
+  .cam-controls .btn-adjuntar,
+  .cam-controls .btn-emoji { width: 32px; height: 32px; font-size: 14px; }
+  #mensaje-input { font-size: 16px; padding: 10px; border-radius: 6px; }
+  #btn-enviar { padding: 0 10px; font-size: 13px; min-width: 50px; height: 34px; }
+  .radio-barra { padding: 3px 8px; gap: 4px; }
+  .radio-play { width: 24px; height: 24px; font-size: 11px; }
+  .radio-nombre { font-size: 11px; display: none; }
+  .radio-emisoras { font-size: 11px; padding: 3px 5px; }
+  .mensaje { font-size: 12px; gap: 5px; }
+  .mensaje .nick { font-size: 12px; }
+  .badge { font-size: 9px; padding: 1px 4px; }
+  .hero-parche { padding: 20px 0 16px; }
+  .hero-parche h1 { font-size: clamp(28px, 8vw, 40px); }
+  .hero-parche-desc { font-size: 14px; padding: 0 8px; }
+  .hero-parche-box { margin: 0 8px; padding: 16px; border-radius: 10px; }
+  .campo { flex-direction: column; align-items: stretch; gap: 6px; }
+  .campo-input-ico { width: 100%; }
+  .campo-select { min-width: 100%; }
+  .campo-perfil { flex-direction: row; flex-wrap: wrap; }
+  .perfil-avatar { min-width: 0; }
+  .perfil-color input[type="color"] { width: 38px; height: 38px; }
+  .btn-chatear-parche { padding: 12px; font-size: 16px; }
+  .bandera-top { height: 6px; }
+  .contenedor { padding: 0 12px; }
+  .section-parche { padding: 20px 0 8px; }
+  .section-parche h2 { font-size: 26px; }
+  .sala-link { padding: 10px 12px; }
+  .sala-link-ico { font-size: 28px; }
+  .sala-link-cuerpo b { font-size: 14px; }
+  .sala-link-cuerpo small { font-size: 12px; }
+  .tile-parche { padding: 14px; }
+  .tile-parche h3 { font-size: 18px; }
+  .tile-parche p, .tile-parche li { font-size: 13px; }
+  .normas-parche { padding: 20px 0 24px; }
+  .normas-parche h2 { font-size: 24px; }
+  .footer-col h2 { font-size: 14px; }
+  .footer-col a { font-size: 13px; }
+  .footer-bottom { padding: 12px 0; font-size: 13px; }
+}
+
+/* ===== Grid de salas Bulma (index.html) ===== */
+.bd-links{display:grid;gap:1em;grid-template-columns:repeat(auto-fill,minmax(20em,1fr))}
+.bd-link{border-radius:6px;color:#7a7a7a;display:flex;padding:1em;text-decoration:none}
+.bd-link:hover{background-color:#FFEBED;color:#555}
+.bd-link-icon{display:flex;align-items:center;flex-shrink:0;margin-right:.75em}
+.bd-link-title{color:#363636;font-weight:600;line-height:1.5}
+.bd-link-subtitle{font-size:.75em}
+.roundedi{border-radius:2.25rem}
+
+/* ===== Footer Bulma (index.html) ===== */
+.site-footer{border-top:1px solid #e8edf3;margin-top:28px;padding:28px 14px 22px}
+.site-footer .container{max-width:950px}
+.footer-grid{display:grid;gap:20px;grid-template-columns:repeat(3,minmax(0,1fr));text-align:left}
+.footer-links h2{color:#253247;font-size:.9rem;font-weight:700;letter-spacing:0;margin:0 0 10px}
+.footer-links a{color:#0b7285;display:block;font-size:.94rem;line-height:1.35;margin:0 0 8px;text-decoration:none}
+.footer-links a:hover{color:#087f83;text-decoration:underline}
+.footer-bottom{border-top:1px solid #edf1f5;color:#536070;font-size:.92rem;line-height:1.55;margin-top:18px;padding-top:16px;text-align:center}
+.footer-bottom p{margin:0 0 8px}
+.footer-bottom a{color:#0b7285;font-weight:700;text-decoration:none}
+.footer-bottom a:hover{text-decoration:underline}
+
+@media (max-width:640px){
+  .site-footer{padding:24px 16px 20px}
+  .footer-grid{grid-template-columns:1fr;gap:14px;text-align:center}
+  .footer-links a{margin-bottom:7px}
+}
+
