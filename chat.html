@@ -63,19 +63,20 @@ body{display:flex;flex-direction:column;font-family:'Open Sans',Arial,sans-serif
 .adjunto-bar{background:#e3f2fd;padding:4px 16px;display:flex;align-items:center;gap:8px;font-size:.85em}
 .adjunto-bar.hidden{display:none}
 
-.cali-banner{display:flex;align-items:center;height:1cm;min-height:1cm;max-height:1cm;background:url('img/bandera-cali.svg') center/cover no-repeat;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.3);position:relative;z-index:20}
-.cali-banner::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.15);pointer-events:none}
-.cali-banner-section{display:flex;align-items:center;gap:6px;padding:0 12px;position:relative;z-index:1}
-.cali-left{flex:1;min-width:0}
-.cali-center{flex:1;justify-content:center}
-.cali-right{flex:1;justify-content:flex-end}
-.cali-title{font-family:'Bebas Neue',sans-serif;font-size:1em;color:#fff;letter-spacing:1.5px;text-shadow:0 1px 3px rgba(0,0,0,.7)}
-.cali-sala{color:#fff;font-size:.75em;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,.7)}
-.cali-users{color:#fff;font-size:.8em;text-shadow:0 1px 2px rgba(0,0,0,.7)}
-.cali-btn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);color:#fff;padding:2px 10px;border-radius:4px;font-size:.75em;font-weight:600;cursor:pointer;text-decoration:none;transition:background .15s;text-shadow:0 1px 2px rgba(0,0,0,.5)}
-.cali-btn:hover{background:rgba(255,255,255,.4)}
+.cali-flag{display:block;width:100%;height:1cm;min-height:1cm;max-height:1cm;background:url('img/bandera-cali.svg') center/cover no-repeat;flex-shrink:0;position:relative;z-index:20}
+.cali-nav{display:flex;align-items:center;background:#1a1a2e;flex-shrink:0;padding:0 12px;gap:8px;height:36px}
+.cali-nav-left{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+.cali-nav-center{display:flex;align-items:center;gap:6px;flex:1;justify-content:center}
+.cali-nav-right{display:flex;align-items:center;gap:6px;flex:1;justify-content:flex-end}
+.cali-title{font-family:'Bebas Neue',sans-serif;font-size:1em;color:#fff;letter-spacing:1.5px;white-space:nowrap}
+.cali-sala{color:#ffcf00;font-size:.75em;font-weight:600}
+.cali-users{color:#aaa;font-size:.8em}
+.cali-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:3px 10px;border-radius:4px;font-size:.75em;font-weight:600;cursor:pointer;text-decoration:none;transition:background .15s;position:relative}
+.cali-btn:hover{background:rgba(255,255,255,.25)}
 .cali-btn-salir{background:rgba(227,34,42,.6);border-color:rgba(227,34,42,.8)}
 .cali-btn-salir:hover{background:rgba(227,34,42,.85)}
+.cali-priv-badge{position:absolute;top:-6px;right:-6px;background:#e3222a;color:#fff;border-radius:50%;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:.65em;font-weight:700;display:none}
+.cali-priv-badge.visible{display:flex}
 
 .input-group{display:flex;gap:8px;align-items:center}
 .input-group input[type=text]{flex:1}
@@ -87,6 +88,8 @@ body{display:flex;flex-direction:column;font-family:'Open Sans',Arial,sans-serif
 .priv-chip:hover{background:#f0f0f0}
 .priv-chip.activo{background:#3730a3;color:#fff;border-color:#3730a3}
 .priv-chip .unread{background:#e3222a;color:#fff;border-radius:50%;min-width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:.7em;font-weight:700}
+.priv-chip .close-priv{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,.15);color:inherit;font-size:.7em;cursor:pointer;margin-left:2px;line-height:1}
+.priv-chip .close-priv:hover{background:rgba(227,34,42,.6);color:#fff}
 
 .cam-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
 .cam-modal.hidden{display:none}
@@ -106,14 +109,14 @@ body{display:flex;flex-direction:column;font-family:'Open Sans',Arial,sans-serif
   html,body{height:100%;height:100dvh;overflow:hidden}
   body{display:flex;flex-direction:column}
 
-  .cali-banner{height:auto;min-height:auto;max-height:none;padding:4px 0}
-  .cali-banner .cali-left{min-width:0;flex:1}
-  .cali-banner .cali-left img{width:22px;height:22px}
-  .cali-title{font-size:.85em}
+  .cali-flag{height:.6cm;min-height:.6cm;max-height:.6cm}
+  .cali-nav{padding:0 8px;height:32px;gap:4px}
+  .cali-nav-left img{width:20px;height:20px}
+  .cali-title{font-size:.8em}
   .cali-sala{display:none}
-  .cali-center{display:none}
-  .cali-right{gap:4px}
-  .cali-btn{padding:4px 8px;font-size:.7em}
+  .cali-nav-center{display:none}
+  .cali-nav-right{gap:4px}
+  .cali-btn{padding:3px 6px;font-size:.7em}
 
   .radio-bar{padding:3px 8px;font-size:.75em;gap:4px}
   .radio-bar select{font-size:.75em;max-width:120px}
@@ -153,17 +156,21 @@ body{display:flex;flex-direction:column;font-family:'Open Sans',Arial,sans-serif
 </head>
 <body>
 
-<!-- Banner Bandera de Cali -->
-<div class="cali-banner">
-  <div class="cali-banner-section cali-left">
+<!-- Bandera de Cali -->
+<div class="cali-flag"></div>
+
+<!-- Barra de navegación -->
+<div class="cali-nav">
+  <div class="cali-nav-left">
     <img src="img/favicon.svg" width="28" height="28" alt="Logo">
     <span class="cali-title">El Parche de Cali</span>
     <span id="sala-label" class="cali-sala"></span>
   </div>
-  <div class="cali-banner-section cali-center">
+  <div class="cali-nav-center">
     <span id="chip-users" class="cali-users">👥 0 conectados</span>
   </div>
-  <div class="cali-banner-section cali-right">
+  <div class="cali-nav-right">
+    <button id="btn-priv-notif" class="cali-btn" title="Mensajes privados" style="display:none">🔒 <span id="priv-total-badge" class="cali-priv-badge">0</span></button>
     <button id="btn-toggle-users" class="cali-btn" title="Usuarios">👥</button>
     <a href="index.html" class="cali-btn cali-btn-salir">Salir</a>
   </div>

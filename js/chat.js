@@ -127,33 +127,63 @@
         arch.className = "texto";
         if (msg.datos && msg.datos.indexOf("image/") !== -1) {
           arch.className += " archivo-img";
-          var placeholder = document.createElement("div");
-          placeholder.className = "media-placeholder";
-          placeholder.innerHTML = '<i class="fas fa-image"></i> Foto — toca para ver';
-          placeholder.addEventListener("click", function() {
-            var img = document.createElement("img");
-            img.src = msg.datos;
-            img.alt = msg.nombre || "Foto";
-            img.style.cursor = "pointer";
-            arch.innerHTML = "";
-            arch.appendChild(img);
-          });
-          arch.appendChild(placeholder);
+          (function() {
+            var visible = false;
+            function show() {
+              arch.innerHTML = "";
+              var img = document.createElement("img");
+              img.src = msg.datos;
+              img.alt = msg.nombre || "Foto";
+              img.style.cursor = "pointer";
+              img.addEventListener("click", hide);
+              arch.appendChild(img);
+              visible = true;
+            }
+            function hide() {
+              arch.innerHTML = "";
+              var ph = document.createElement("div");
+              ph.className = "media-placeholder";
+              ph.innerHTML = '<i class="fas fa-image"></i> Foto — toca para ver';
+              ph.addEventListener("click", show);
+              arch.appendChild(ph);
+              visible = false;
+            }
+            var ph = document.createElement("div");
+            ph.className = "media-placeholder";
+            ph.innerHTML = '<i class="fas fa-image"></i> Foto — toca para ver';
+            ph.addEventListener("click", show);
+            arch.appendChild(ph);
+          })();
         } else if (msg.datos && msg.datos.indexOf("video/") !== -1) {
           arch.className += " archivo-vid";
-          var placeholder = document.createElement("div");
-          placeholder.className = "media-placeholder";
-          placeholder.innerHTML = '<i class="fas fa-video"></i> Video — toca para ver';
-          placeholder.addEventListener("click", function() {
-            var v = document.createElement("video");
-            v.src = msg.datos;
-            v.controls = true;
-            v.preload = "metadata";
-            arch.innerHTML = "";
-            arch.appendChild(v);
-            v.play().catch(function() {});
-          });
-          arch.appendChild(placeholder);
+          (function() {
+            var visible = false;
+            function show() {
+              arch.innerHTML = "";
+              var v = document.createElement("video");
+              v.src = msg.datos;
+              v.controls = true;
+              v.preload = "metadata";
+              v.addEventListener("click", hide);
+              arch.appendChild(v);
+              v.play().catch(function() {});
+              visible = true;
+            }
+            function hide() {
+              arch.innerHTML = "";
+              var ph = document.createElement("div");
+              ph.className = "media-placeholder";
+              ph.innerHTML = '<i class="fas fa-video"></i> Video — toca para ver';
+              ph.addEventListener("click", show);
+              arch.appendChild(ph);
+              visible = false;
+            }
+            var ph = document.createElement("div");
+            ph.className = "media-placeholder";
+            ph.innerHTML = '<i class="fas fa-video"></i> Video — toca para ver';
+            ph.addEventListener("click", show);
+            arch.appendChild(ph);
+          })();
         } else {
           var a = document.createElement("a");
           a.href = msg.datos;
@@ -258,27 +288,70 @@
   // ===== Priv chips bar =====
   var privChipsEl = $("priv-chips");
 
+  var privBtnNotif = $("btn-priv-notif");
+  var privTotalBadge = $("priv-total-badge");
+
   function renderPrivChips() {
     privChipsEl.innerHTML = "";
+    var totalUnread = 0;
     Object.keys(privados).forEach(function(nick) {
       if (privados[nick].msgs.length === 0 && !privados[nick].noLeidos) return;
+      var unread = privados[nick].noLeidos || 0;
+      totalUnread += (privadoCon !== nick) ? unread : 0;
       var chip = document.createElement("span");
       chip.className = "priv-chip" + (privadoCon === nick ? " activo" : "");
-      chip.textContent = "🔒 " + nick;
-      if (privados[nick].noLeidos > 0 && privadoCon !== nick) {
-        var badge = document.createElement("span");
-        badge.className = "unread";
-        badge.textContent = privados[nick].noLeidos;
-        chip.appendChild(badge);
-      }
-      chip.addEventListener("click", function() {
+
+      var label = document.createElement("span");
+      label.textContent = "🔒 " + nick;
+      label.addEventListener("click", function(e) {
+        e.stopPropagation();
         privados[nick].noLeidos = 0;
         renderPrivChips();
         abrirPrivado(nick);
       });
+      chip.appendChild(label);
+
+      if (unread > 0 && privadoCon !== nick) {
+        var badge = document.createElement("span");
+        badge.className = "unread";
+        badge.textContent = unread;
+        chip.appendChild(badge);
+      }
+
+      var closeBtn = document.createElement("span");
+      closeBtn.className = "close-priv";
+      closeBtn.innerHTML = "✕";
+      closeBtn.title = "Cerrar chat con " + nick;
+      closeBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        delete privados[nick];
+        if (privadoCon === nick) cerrarPrivado();
+        renderPrivChips();
+      });
+      chip.appendChild(closeBtn);
+
       privChipsEl.appendChild(chip);
     });
+
+    if (totalUnread > 0) {
+      privBtnNotif.style.display = "";
+      privTotalBadge.textContent = totalUnread;
+      privTotalBadge.classList.add("visible");
+    } else {
+      privBtnNotif.style.display = "none";
+      privTotalBadge.classList.remove("visible");
+    }
   }
+
+  privBtnNotif.addEventListener("click", function() {
+    var nicks = Object.keys(privados).filter(function(n) { return privados[n].noLeidos > 0; });
+    if (nicks.length > 0) {
+      nicks.sort(function(a,b) { return (privados[b].noLeidos||0) - (privados[a].noLeidos||0); });
+      privados[nicks[0]].noLeidos = 0;
+      renderPrivChips();
+      abrirPrivado(nicks[0]);
+    }
+  });
 
   // ===== Usuarios =====
   function renderUsuarios(lista) {
