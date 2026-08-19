@@ -286,9 +286,10 @@
       nombre: msg.nombre || "",
       mime: msg.mime || "",
       datos: msg.datos || "",
-      color: "#333",
-      avatar: "🙂",
-      rol: "nuevo"
+      color: msg.color || "#333",
+      avatar: msg.avatar || "🙂",
+      rol: msg.rol || "nuevo",
+      pais: msg.pais || "🌐"
     };
     privados[nick].msgs.push(obj);
     privados[nick].lastId = msg.id;
@@ -301,6 +302,10 @@
       renderPrivChips();
       if (!document.hidden) {
         try { new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=").play(); } catch(e) {}
+      }
+      // Auto-abrir chat privado si no estás en ninguno
+      if (!privadoCon && privados[nick].noLeidos === 1) {
+        abrirPrivado(nick);
       }
     }
   }
@@ -319,7 +324,7 @@
       var unread = privados[nick].noLeidos || 0;
       totalUnread += (privadoCon !== nick) ? unread : 0;
       var chip = document.createElement("span");
-      chip.className = "priv-chip" + (privadoCon === nick ? " activo" : "");
+      chip.className = "priv-chip" + (privadoCon === nick ? " activo" : "") + (unread > 0 && privadoCon !== nick ? " tiene-nuevos" : "");
 
       var label = document.createElement("span");
       label.textContent = "🔒 " + nick;
@@ -336,6 +341,10 @@
         badge.className = "unread";
         badge.textContent = unread;
         chip.appendChild(badge);
+
+        var dot = document.createElement("span");
+        dot.className = "priv-dot-blink";
+        chip.appendChild(dot);
       }
 
       var close = document.createElement("span");
@@ -821,8 +830,8 @@
 
       poll();
       cargarUsuarios();
-      polling = setInterval(poll, 2000);
-      userPolling = setInterval(cargarUsuarios, 3000);
+      polling = setInterval(poll, 1000);
+      userPolling = setInterval(cargarUsuarios, 2000);
     });
   }
 

@@ -119,12 +119,18 @@ body{display:flex;flex-direction:column;font-family:'Open Sans',Arial,sans-serif
 
 .priv-chips{display:flex;gap:6px;flex-wrap:wrap;padding:4px 16px;background:#fff;border-bottom:1px solid #eee;flex-shrink:0}
 .priv-chips:empty{display:none}
-.priv-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;font-size:.82em;cursor:pointer;border:1px solid #ddd;background:#fff;transition:background .15s}
+.priv-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;font-size:.82em;cursor:pointer;border:1px solid #ddd;background:#fff;transition:background .15s;position:relative}
 .priv-chip:hover{background:#f0f0f0}
 .priv-chip.activo{background:#3730a3;color:#fff;border-color:#3730a3}
 .priv-chip .unread{background:#e3222a;color:#fff;border-radius:50%;min-width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:.7em;font-weight:700}
 .priv-chip .close-priv{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,.15);color:inherit;font-size:.7em;cursor:pointer;margin-left:2px;line-height:1}
 .priv-chip .close-priv:hover{background:rgba(227,34,42,.6);color:#fff}
+
+.priv-dot-blink{position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#e3222a;border:2px solid #fff;animation:blinkDot 1s infinite}
+@keyframes blinkDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+
+.priv-chip.tiene-nuevos{animation:chipGlow 1.5s infinite}
+@keyframes chipGlow{0%,100%{box-shadow:0 0 0 0 rgba(227,34,42,0)}50%{box-shadow:0 0 8px 2px rgba(227,34,42,.4)}}
 
 .cam-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
 .cam-modal.hidden{display:none}

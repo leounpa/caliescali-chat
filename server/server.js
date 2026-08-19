@@ -377,7 +377,7 @@ var servidor = http.createServer(function(req, res) {
 
         var key = [u.nick, para].sort().join("|");
         if (!privados[key]) privados[key] = [];
-        privados[key].push({ id:++msgIdCounter, from:u.nick, texto:texto, fecha:Date.now(), tipo:"msg" });
+        privados[key].push({ id:++msgIdCounter, from:u.nick, texto:texto, fecha:Date.now(), tipo:"msg", avatar:u.avatar, color:u.color, pais:u.pais||"🌐" });
         if (privados[key].length > 100) privados[key] = privados[key].slice(-50);
 
         jsonRes(res, 200, { ok:true });
@@ -400,7 +400,7 @@ var servidor = http.createServer(function(req, res) {
 
         var key = [u.nick, para].sort().join("|");
         if (!privados[key]) privados[key] = [];
-        privados[key].push({ id:++msgIdCounter, from:u.nick, texto:"", fecha:Date.now(), tipo:"archivo", nombre:b.nombre, mime:b.mime, datos:b.datos });
+        privados[key].push({ id:++msgIdCounter, from:u.nick, texto:"", fecha:Date.now(), tipo:"archivo", nombre:b.nombre, mime:b.mime, datos:b.datos, avatar:u.avatar, color:u.color, pais:u.pais||"🌐" });
         if (privados[key].length > 100) privados[key] = privados[key].slice(-50);
 
         jsonRes(res, 200, { ok:true });
