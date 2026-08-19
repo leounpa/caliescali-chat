@@ -7,13 +7,20 @@
   var PARAMS = new URLSearchParams(location.search);
   var NICK = (getCookie("nick") || PARAMS.get("nick") || localStorage.getItem("parcheNick") || "").trim().slice(0, 24);
   var SALA = (PARAMS.get("sala") || localStorage.getItem("parcheSala") || "cali").trim();
-  var GENERO = (getCookie("genero") || PARAMS.get("genero") || "").trim();
-  var MI_AVATAR = localStorage.getItem("parcheAvatar") || "🙂";
+  var GENERO = (getCookie("genero") || PARAMS.get("genero") || localStorage.getItem("parcheGenero") || "").trim();
+  var MI_AVATAR = localStorage.getItem("parcheAvatar") || "";
   var MI_COLOR = "#007a4d";
   var TOKEN = null;
   var SOY_MOD = false;
   var MI_ROL = "nuevo";
   var MIS_PUNTOS = 0;
+  var MI_PAIS = "🌐";
+
+  // Gender-based default avatar
+  if (!MI_AVATAR) {
+    MI_AVATAR = (GENERO === "Hombre") ? "👨" : (GENERO === "Mujer") ? "👩" : "🙂";
+    localStorage.setItem("parcheAvatar", MI_AVATAR);
+  }
 
   var SALAS_TITULO = {
     cali:"#Cali · Principal", salsa:"#Salsa", rumba:"#Rumba",
@@ -116,6 +123,13 @@
       var av = document.createElement("span");
       av.className = "avatar-mini";
       av.textContent = msg.avatar || "🙂";
+      av.style.cursor = "pointer";
+      (function(pais) {
+        av.addEventListener("click", function(e) {
+          e.stopPropagation();
+          showFlagAt(e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0), e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0), pais);
+        });
+      })(msg.pais || "🌐");
       n.appendChild(av);
       n.appendChild(document.createTextNode(msg.nick));
       n.style.color = msg.color || "#333";
@@ -253,6 +267,12 @@
     input.focus();
   }
 
+  function eliminarPrivado(nick) {
+    if (privadoCon === nick) cerrarPrivado();
+    delete privados[nick];
+    renderPrivChips();
+  }
+
   function pintarPrivMsg(msg) {
     var nick = msg.from;
     var key = [NICK, nick].sort().join("|");
@@ -318,28 +338,25 @@
         chip.appendChild(badge);
       }
 
-      var closeBtn = document.createElement("span");
-      closeBtn.className = "close-priv";
-      closeBtn.innerHTML = "✕";
-      closeBtn.title = "Cerrar chat con " + nick;
-      closeBtn.addEventListener("click", function(e) {
+      var close = document.createElement("span");
+      close.className = "close-priv";
+      close.textContent = "✕";
+      close.addEventListener("click", function(e) {
         e.stopPropagation();
-        delete privados[nick];
-        if (privadoCon === nick) cerrarPrivado();
-        renderPrivChips();
+        eliminarPrivado(nick);
       });
-      chip.appendChild(closeBtn);
+      chip.appendChild(close);
 
       privChipsEl.appendChild(chip);
     });
 
+    privTotalBadge.textContent = totalUnread;
     if (totalUnread > 0) {
-      privBtnNotif.style.display = "";
-      privTotalBadge.textContent = totalUnread;
       privTotalBadge.classList.add("visible");
+      privBtnNotif.style.display = "";
     } else {
-      privBtnNotif.style.display = "none";
       privTotalBadge.classList.remove("visible");
+      privBtnNotif.style.display = "none";
     }
   }
 
@@ -354,7 +371,7 @@
   });
 
   // ===== Settings =====
-  var AVATARS = ["🙂","😎","🤠","🥳","😇","🤩","😈","💀","👻","🤖","👽","🦁","🐯","🦊","🐱","🐶","🦄","🐸","🐵","🙈","🙉","🙊","🦀","🦞","🌶️","🔥","⚡","💀","🎃","🎸","⚽","🏀","🎯","🎲","🧩","🎨","✈️","🚀","🛸","💡","🔮","💎","🍀","🌴","🌻","🌺","🎵","🎶","🎤"];
+  var AVATARS = ["👨","👩","🙂","😎","🤠","🥳","😇","🤩","😈","💀","👻","🤖","👽","🦁","🐯","🦊","🐱","🐶","🦄","🐸","🐵","🙈","🙉","🙊","🦀","🦞","🌶️","🔥","⚡","🎃","🎸","⚽","🏀","🎯","🎲","🧩","🎨","✈️","🚀","🛸","💡","🔮","💎","🍀","🌴","🌻","🌺","🎵","🎶","🎤"];
   var settingsModal = $("settings-modal");
   var avatarGrid = $("avatar-grid");
   var settingsNick = $("settings-nick");
@@ -460,9 +477,21 @@
         dot.style.background = u.color || "#333";
         item.appendChild(dot);
 
+        var avatarEl = document.createElement("span");
+        avatarEl.className = "avatar-mini";
+        avatarEl.textContent = u.avatar || "🙂";
+        avatarEl.style.cursor = "pointer";
+        (function(userNick, userPais) {
+          avatarEl.addEventListener("click", function(e) {
+            e.stopPropagation();
+            showFlagAt(e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY, userPais);
+          });
+        })(u.nick, u.pais || "🌐");
+        item.appendChild(avatarEl);
+
         var nombre = document.createElement("span");
         nombre.className = "nombre";
-        nombre.textContent = u.avatar + " " + u.nick;
+        nombre.textContent = u.nick;
         nombre.style.color = u.color || "#333";
         item.appendChild(nombre);
 
@@ -731,9 +760,9 @@
         if (m.tipo === "sys") {
           anadirMensaje({tipo:"sys", texto:m.texto});
         } else if (m.tipo === "archivo") {
-          anadirMensaje({tipo:"archivo", nick:m.nick, avatar:m.avatar, color:m.color, nombre:m.nombre, mime:m.mime, datos:m.datos, rol:m.rol, esMod:false});
+          anadirMensaje({tipo:"archivo", nick:m.nick, avatar:m.avatar, color:m.color, nombre:m.nombre, mime:m.mime, datos:m.datos, rol:m.rol, esMod:false, pais:m.pais||"🌐"});
         } else if (m.tipo === "msg") {
-          anadirMensaje({tipo:"msg", nick:m.nick, avatar:m.avatar, color:m.color, texto:m.texto, rol:m.rol, esMod:false});
+          anadirMensaje({tipo:"msg", nick:m.nick, avatar:m.avatar, color:m.color, texto:m.texto, rol:m.rol, esMod:false, pais:m.pais||"🌐"});
         }
       });
     });
@@ -764,7 +793,7 @@
 
   // ===== Join =====
   function join() {
-    apiPost("/api/join", {nick:NICK, sala:SALA, avatar:MI_AVATAR, color:MI_COLOR}, function(err, res) {
+    apiPost("/api/join", {nick:NICK, sala:SALA, avatar:MI_AVATAR, color:MI_COLOR, genero:GENERO}, function(err, res) {
       if (err || !res) {
         anadirMensaje({tipo:"sys", texto:"Error de conexión. Reintentando en 3s..."});
         setTimeout(join, 3000);
@@ -779,6 +808,7 @@
       SOY_MOD = res.esMod;
       MI_ROL = res.rol;
       MIS_PUNTOS = res.puntos;
+      MI_PAIS = res.pais || "🌐";
       input.disabled = false;
       btnSend.disabled = false;
       input.focus();
@@ -857,6 +887,66 @@
   window.addEventListener("beforeunload", function() {
     if (TOKEN) {
       apiPost("/api/leave", {token:TOKEN});
+    }
+  });
+
+  // ===== Sala switcher =====
+  var salaSwitcher = $("sala-switcher");
+  if (salaSwitcher) {
+    Object.keys(SALAS_TITULO).forEach(function(key) {
+      var btn = document.createElement("button");
+      btn.textContent = SALAS_TITULO[key];
+      btn.className = (key === SALA) ? "sala-active" : "";
+      btn.addEventListener("click", function() {
+        if (key === SALA || !TOKEN) return;
+        apiPost("/api/switch?token=" + TOKEN, {sala:key}, function(err, res) {
+          if (res && res.ok) {
+            SALA = key;
+            localStorage.setItem("parcheSala", SALA);
+            $("sala-label").textContent = SALAS_TITULO[SALA] || ("#" + SALA);
+            document.title = (SALAS_TITULO[SALA] || ("#" + SALA)) + " · El Parche de Cali";
+            lastMsgId = 0;
+            mensajesEl.innerHTML = "";
+            salaSwitcher.querySelectorAll("button").forEach(function(b) { b.classList.remove("sala-active"); });
+            btn.classList.add("sala-active");
+            cargarMensajes();
+            cargarUsuarios();
+            anadirMensaje({tipo:"sys", texto:"➡️ Ahora estás en " + SALAS_TITULO[SALA]});
+          } else if (res && res.error) {
+            anadirMensaje({tipo:"sys", texto:res.error});
+          }
+        });
+      });
+      salaSwitcher.appendChild(btn);
+    });
+  }
+
+  // ===== Flag popup on avatar click =====
+  var flagPopup = $("flag-popup");
+  var flagBig = $("flag-big");
+  var flagCountry = $("flag-country");
+
+  var COUNTRY_NAMES = {
+    "🇨🇴":"Colombia","🇺🇸":"Estados Unidos","🇲🇽":"México","🇪🇸":"España","🇦🇷":"Argentina",
+    "🇨🇱":"Chile","🇵🇪":"Perú","🇻🇪":"Venezuela","🇪🇨":"Ecuador","🇧🇷":"Brasil",
+    "🇧🇴":"Bolivia","🇵🇾":"Paraguay","🇺🇾":"Uruguay","🇨🇷":"Costa Rica","🇵🇦":"Panamá",
+    "🇭🇳":"Honduras","🇬🇹":"Guatemala","🇸🇻":"El Salvador","🇳🇮":"Nicaragua","🇨🇺":"Cuba",
+    "🇩🇴":"República Dominicana","🇵🇷":"Puerto Rico","🇩🇪":"Alemania","🇫🇷":"Francia",
+    "🇮🇹":"Italia","🇬🇧":"Reino Unido","🇨🇦":"Canadá","🇯🇵":"Japón","🇨🇳":"China",
+    "🇰🇷":"Corea del Sur","🇮🇳":"India","🇦🇺":"Australia","🇿🇦":"Sudáfrica","🇳🇬":"Nigeria"
+  };
+
+  function showFlagAt(x, y, pais) {
+    flagBig.textContent = pais || "🌐";
+    flagCountry.textContent = COUNTRY_NAMES[pais] || "";
+    flagPopup.style.display = "block";
+    flagPopup.style.left = Math.min(x, window.innerWidth - 140) + "px";
+    flagPopup.style.top = Math.max(0, y - 80) + "px";
+  }
+
+  document.addEventListener("click", function(e) {
+    if (!flagPopup.contains(e.target)) {
+      flagPopup.style.display = "none";
     }
   });
 

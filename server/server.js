@@ -32,6 +32,35 @@ const TIPOS = {
 
 const SALAS = { cali:"#Cali", salsa:"#Salsa", rumba:"#Rumba", colombia:"#Colombia", general:"#General", amistad:"#Amistad" };
 
+// ===== Country flags from IP (free ip-api) =====
+const countryCache = new Map();
+function getCountryFlag(ip) {
+  if (!ip || ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1") return "🇨🇴";
+  if (countryCache.has(ip)) return countryCache.get(ip);
+  var flag = "🌐";
+  try {
+    const httpMod = require("http");
+    const url = "http://ip-api.com/json/" + ip + "?fields=countryCode";
+    const req2 = httpMod.get(url, {timeout:2000}, function(res2) {
+      var d = "";
+      res2.on("data", function(c) { d += c; });
+      res2.on("end", function() {
+        try {
+          var j = JSON.parse(d);
+          if (j.countryCode) {
+            var cc = j.countryCode.toUpperCase();
+            var f = String.fromCodePoint(...cc.split("").map(function(c){return 0x1F1E6+c.charCodeAt(0)-65}));
+            countryCache.set(ip, f);
+          }
+        } catch(e) {}
+      });
+    });
+    req2.on("error", function() {});
+    req2.end();
+  } catch(e) {}
+  return flag;
+}
+
 // ===== Estado en memoria =====
 let msgIdCounter = 0;
 const mensajes = {};
@@ -159,7 +188,7 @@ function usuariosEnSala(sala) {
     if (u.sala === sala) {
       const r = rolDe(u.nick);
       const pts = (usuariosPuntos[u.nick] || {}).puntos || 0;
-      lista.push({ nick:u.nick, avatar:u.avatar, color:u.color, rol:r.nombre, rolLabel:r.label, puntos:pts, esMod:esMod(u.nick) });
+      lista.push({ nick:u.nick, avatar:u.avatar, color:u.color, rol:r.nombre, rolLabel:r.label, puntos:pts, esMod:esMod(u.nick), pais:u.pais||"🌐" });
     }
   });
   return lista;
@@ -221,6 +250,7 @@ var servidor = http.createServer(function(req, res) {
         var sala = b.sala || "cali";
         var avatar = (b.avatar || "🙂").slice(0, 8);
         var color = /^#[0-9a-f]{6}$/i.test(b.color || "") ? b.color : "#007a4d";
+        var genero = (b.genero || "").trim();
 
         if (!nick || nick.length < 2) return jsonRes(res, 400, { error:"Apodo inválido (mín. 2 caracteres)." });
         if (!SALAS[sala]) return jsonRes(res, 400, { error:"Sala inválida." });
@@ -236,8 +266,12 @@ var servidor = http.createServer(function(req, res) {
           delete usuarios[tokenViejo];
         }
 
+        // Detect country from IP
+        var clientIp = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
+        var pais = getCountryFlag(clientIp);
+
         var token = generarToken();
-        usuarios[token] = { nick:nick, sala:sala, avatar:avatar, color:color, visto:Date.now() };
+        usuarios[token] = { nick:nick, sala:sala, avatar:avatar, color:color, visto:Date.now(), genero:genero, pais:pais };
         nickTokens[nick] = token;
 
         if (!usuariosPuntos[nick]) {
@@ -263,7 +297,9 @@ var servidor = http.createServer(function(req, res) {
           rol:miRol.nombre,
           rolLabel:miRol.label,
           puntos:usuariosPuntos[nick].puntos,
-          esMod:esMod(nick)
+          esMod:esMod(nick),
+          genero:genero,
+          pais:pais
         });
       }).catch(function() { jsonRes(res, 500, { error:"Error del servidor." }); });
       return;
@@ -296,7 +332,7 @@ var servidor = http.createServer(function(req, res) {
           if (b.datos.length > MAX_ARCHIVO) return jsonRes(res, 400, { error:"Archivo muy grande (máx. 6 MB)." });
           sumarPuntos(u.nick, PUNTOS_POR_MSG);
           var rol = rolDe(u.nick);
-          agregarMensaje(u.sala, { tipo:"archivo", nick:u.nick, avatar:u.avatar, color:u.color, nombre:b.nombre, mime:b.mime, datos:b.datos, rol:rol.nombre, puntos:(usuariosPuntos[u.nick]||{}).puntos||0 });
+          agregarMensaje(u.sala, { tipo:"archivo", nick:u.nick, avatar:u.avatar, color:u.color, nombre:b.nombre, mime:b.mime, datos:b.datos, rol:rol.nombre, puntos:(usuariosPuntos[u.nick]||{}).puntos||0, pais:u.pais||"🌐" });
           return jsonRes(res, 200, { ok:true });
         }
 
@@ -313,7 +349,7 @@ var servidor = http.createServer(function(req, res) {
         }
 
         var r = sumarPuntos(u.nick, PUNTOS_POR_MSG);
-        agregarMensaje(u.sala, { tipo:"msg", nick:u.nick, avatar:u.avatar, color:u.color, texto:texto, rol:r.rolNuevo.nombre, puntos:(usuariosPuntos[u.nick]||{}).puntos||0 });
+        agregarMensaje(u.sala, { tipo:"msg", nick:u.nick, avatar:u.avatar, color:u.color, texto:texto, rol:r.rolNuevo.nombre, puntos:(usuariosPuntos[u.nick]||{}).puntos||0, pais:u.pais||"🌐" });
 
         if (r.subio) {
           agregarMensaje(u.sala, { tipo:"sys", texto:"🎉 ¡" + u.nick + " alcanzó el rango de " + r.rolNuevo.label + "! 🏆", nick:"" });
@@ -451,6 +487,23 @@ var servidor = http.createServer(function(req, res) {
       }).catch(function() { jsonRes(res, 500, { error:"Error del servidor." }); });
       return;
     }
+
+    // POST /api/switch?token=T
+    if (ruta === "/api/switch" && req.method === "POST") {
+      var token = params.token;
+      if (!token || !usuarios[token]) return jsonRes(res, 401, { error:"Sesión inválida." });
+      var u = usuarios[token];
+      parseBody(req).then(function(b) {
+        var nuevaSala = b.sala || "";
+        if (!SALAS[nuevaSala]) return jsonRes(res, 400, { error:"Sala inválida." });
+        if (u.sala === nuevaSala) return jsonRes(res, 200, { ok:true, sala:nuevaSala });
+        var salaVieja = u.sala;
+        agregarMensaje(salaVieja, { tipo:"sys", texto:"👋 " + u.nick + " cambió de sala", nick:"" });
+        u.sala = nuevaSala;
+        agregarMensaje(nuevaSala, { tipo:"sys", texto:"🎉 " + u.nick + " entró a " + (SALAS[nuevaSala] || nuevaSala), nick:"" });
+        jsonRes(res, 200, { ok:true, sala:nuevaSala });
+      }).catch(function() { jsonRes(res, 500, { error:"Error del servidor." }); });
+      return;
     }
 
     // POST /api/leave
