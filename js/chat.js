@@ -127,17 +127,33 @@
         arch.className = "texto";
         if (msg.datos && msg.datos.indexOf("image/") !== -1) {
           arch.className += " archivo-img";
-          var img = document.createElement("img");
-          img.src = msg.datos;
-          img.alt = msg.nombre || "Foto";
-          arch.appendChild(img);
+          var placeholder = document.createElement("div");
+          placeholder.className = "media-placeholder";
+          placeholder.innerHTML = '<i class="fas fa-image"></i> Foto — toca para ver';
+          placeholder.addEventListener("click", function() {
+            var img = document.createElement("img");
+            img.src = msg.datos;
+            img.alt = msg.nombre || "Foto";
+            img.style.cursor = "pointer";
+            arch.innerHTML = "";
+            arch.appendChild(img);
+          });
+          arch.appendChild(placeholder);
         } else if (msg.datos && msg.datos.indexOf("video/") !== -1) {
           arch.className += " archivo-vid";
-          var v = document.createElement("video");
-          v.src = msg.datos;
-          v.controls = true;
-          v.preload = "metadata";
-          arch.appendChild(v);
+          var placeholder = document.createElement("div");
+          placeholder.className = "media-placeholder";
+          placeholder.innerHTML = '<i class="fas fa-video"></i> Video — toca para ver';
+          placeholder.addEventListener("click", function() {
+            var v = document.createElement("video");
+            v.src = msg.datos;
+            v.controls = true;
+            v.preload = "metadata";
+            arch.innerHTML = "";
+            arch.appendChild(v);
+            v.play().catch(function() {});
+          });
+          arch.appendChild(placeholder);
         } else {
           var a = document.createElement("a");
           a.href = msg.datos;
@@ -341,6 +357,9 @@
     panelUsers.classList.toggle("abierto");
   });
   $("btn-close-users").addEventListener("click", cerrarUsuarios);
+  mensajesEl.addEventListener("click", function() {
+    if (panelUsers.classList.contains("abierto")) cerrarUsuarios();
+  });
 
   // ===== Archivos =====
   fileInput.addEventListener("change", function() {

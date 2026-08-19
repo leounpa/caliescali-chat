@@ -11,7 +11,8 @@ const PUBLIC = path.join(__dirname, "..");
 const MAX_NICK = 24;
 const MAX_MSG = 500;
 const MAX_ARCHIVO = 6 * 1024 * 1024;
-const MAX_MENSAJES = 200;
+const MAX_MENSAJES = 15;
+const MEDIA_EXPIRY_MS = 10 * 60 * 1000;
 const LIMITE_SILENCIO = 10 * 60 * 1000;
 
 const TIPOS = {
@@ -544,6 +545,7 @@ var servidor = http.createServer(function(req, res) {
 // ===== Limpieza y puntos periódicos =====
 setInterval(function() {
   var ahora = Date.now();
+  // Limpiar usuarios inactivos
   Object.keys(usuarios).forEach(function(token) {
     var u = usuarios[token];
     if (ahora - u.visto > LIMITE_SILENCIO) {
@@ -551,6 +553,19 @@ setInterval(function() {
       delete nickTokens[u.nick];
       delete usuarios[token];
     }
+  });
+  // Limpiar archivos multimedia expirados (10 min)
+  Object.keys(mensajes).forEach(function(sala) {
+    mensajes[sala] = mensajes[sala].filter(function(m) {
+      if (m.tipo === "archivo" && m.fecha && (ahora - m.fecha > MEDIA_EXPIRY_MS)) return false;
+      return true;
+    });
+  });
+  Object.keys(privados).forEach(function(key) {
+    privados[key] = privados[key].filter(function(m) {
+      if (m.tipo === "archivo" && m.fecha && (ahora - m.fecha > MEDIA_EXPIRY_MS)) return false;
+      return true;
+    });
   });
   // Bonus de puntos
   Object.keys(usuarios).forEach(function(token) {
