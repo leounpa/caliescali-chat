@@ -361,6 +361,17 @@
     if (panelUsers.classList.contains("abierto")) cerrarUsuarios();
   });
 
+  // Fix mobile keyboard: scroll input into view when keyboard opens
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", function() {
+      if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) {
+        setTimeout(function() {
+          document.activeElement.scrollIntoView({block:"end",behavior:"smooth"});
+        }, 100);
+      }
+    });
+  }
+
   // ===== Archivos =====
   fileInput.addEventListener("change", function() {
     var f = fileInput.files && fileInput.files[0];
