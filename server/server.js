@@ -409,6 +409,50 @@ var servidor = http.createServer(function(req, res) {
       return;
     }
 
+    // POST /api/settings?token=T
+    if (ruta === "/api/settings" && req.method === "POST") {
+      var token = params.token;
+      if (!token || !usuarios[token]) return jsonRes(res, 401, { error:"Sesión inválida." });
+      var u = usuarios[token];
+      parseBody(req).then(function(b) {
+        var changes = {};
+        // Change avatar
+        if (b.avatar && typeof b.avatar === "string") {
+          var newAvatar = b.avatar.slice(0, 8);
+          u.avatar = newAvatar;
+          changes.avatar = newAvatar;
+        }
+        // Change nick
+        if (b.nick && typeof b.nick === "string") {
+          var newNick = b.nick.trim().slice(0, MAX_NICK);
+          if (newNick.length < 2) return jsonRes(res, 400, { error:"Apodo muy corto (mín. 2 caracteres)." });
+          if (newNick === u.nick) return jsonRes(res, 200, { ok:true, changes:changes });
+          if (nickTokens[newNick] && nickTokens[newNick] !== token) return jsonRes(res, 400, { error:"Ese apodo ya está en uso." });
+          var oldNick = u.nick;
+          // Transfer points
+          if (usuariosPuntos[oldNick]) {
+            if (!usuariosPuntos[newNick]) usuariosPuntos[newNick] = {puntos:0, mensajes:0, tiempoInicio:Date.now(), rolAnterior:"nuevo"};
+            usuariosPuntos[newNick].puntos = (usuariosPuntos[newNick].puntos || 0) + (usuariosPuntos[oldNick].puntos || 0);
+            usuariosPuntos[newNick].mensajes = (usuariosPuntos[newNick].mensajes || 0) + (usuariosPuntos[oldNick].mensajes || 0);
+            delete usuariosPuntos[oldNick];
+            guardarRoles();
+          }
+          // Transfer mod status
+          if (mods.has(oldNick)) { mods.delete(oldNick); mods.add(newNick); }
+          // Update references
+          delete nickTokens[oldNick];
+          u.nick = newNick;
+          nickTokens[newNick] = token;
+          // Notify room
+          agregarMensaje(u.sala, { tipo:"sys", texto:"✏️ " + oldNick + " ahora se llama " + newNick, nick:"" });
+          changes.nick = newNick;
+        }
+        jsonRes(res, 200, { ok:true, changes:changes });
+      }).catch(function() { jsonRes(res, 500, { error:"Error del servidor." }); });
+      return;
+    }
+    }
+
     // POST /api/leave
     if (ruta === "/api/leave" && req.method === "POST") {
       parseBody(req).then(function(b) {

@@ -78,6 +78,31 @@ body{display:flex;flex-direction:column;font-family:'Open Sans',Arial,sans-serif
 .cali-priv-badge{position:absolute;top:-6px;right:-6px;background:#e3222a;color:#fff;border-radius:50%;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:.65em;font-weight:700;display:none}
 .cali-priv-badge.visible{display:flex}
 
+.settings-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:90;display:flex;align-items:center;justify-content:center;padding:16px}
+.settings-modal.hidden{display:none}
+.settings-box{background:#fff;border-radius:12px;width:100%;max-width:380px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.settings-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eee;font-weight:700;font-size:1em}
+.settings-header .close-settings{background:none;border:none;font-size:1.3em;cursor:pointer;color:#888;padding:4px}
+.settings-header .close-settings:hover{color:#333}
+.settings-body{padding:16px}
+.settings-section{margin-bottom:16px}
+.settings-section:last-child{margin-bottom:0}
+.settings-label{font-size:.85em;font-weight:600;color:#555;margin-bottom:6px;display:block}
+.settings-avatar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.settings-avatar-option{width:100%;aspect-ratio:1;border:2px solid transparent;border-radius:8px;background:#f5f5f5;font-size:1.4em;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+.settings-avatar-option:hover{border-color:#aaa}
+.settings-avatar-option.selected{border-color:#3730a3;background:#e8eaf6}
+.settings-nick-input{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:.9em}
+.settings-nick-input:focus{outline:none;border-color:#3730a3}
+.settings-btn{width:100%;padding:8px;border:none;border-radius:6px;font-size:.9em;font-weight:600;cursor:pointer;transition:background .15s}
+.settings-btn-primary{background:#3730a3;color:#fff}
+.settings-btn-primary:hover{background:#2d27a0}
+.settings-theme-row{display:flex;align-items:center;justify-content:space-between}
+.settings-toggle{width:42px;height:24px;border-radius:12px;background:#ccc;border:none;cursor:pointer;position:relative;transition:background .2s}
+.settings-toggle.on{background:#3730a3}
+.settings-toggle::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s}
+.settings-toggle.on::after{left:20px}
+
 .input-group{display:flex;gap:8px;align-items:center}
 .input-group input[type=text]{flex:1}
 .input-group .file-input{display:none}
@@ -117,6 +142,10 @@ body{display:flex;flex-direction:column;font-family:'Open Sans',Arial,sans-serif
   .cali-nav-center{display:none}
   .cali-nav-right{gap:4px}
   .cali-btn{padding:3px 6px;font-size:.7em}
+
+  .settings-modal{padding:8px}
+  .settings-box{max-height:90vh}
+  .settings-avatar-grid{grid-template-columns:repeat(6,1fr)}
 
   .radio-bar{padding:3px 8px;font-size:.75em;gap:4px}
   .radio-bar select{font-size:.75em;max-width:120px}
@@ -165,6 +194,7 @@ body{display:flex;flex-direction:column;font-family:'Open Sans',Arial,sans-serif
     <img src="img/favicon.svg" width="28" height="28" alt="Logo">
     <span class="cali-title">El Parche de Cali</span>
     <span id="sala-label" class="cali-sala"></span>
+    <button id="btn-settings" class="cali-btn" title="Configuración" style="padding:2px 6px;font-size:.85em">⚙️</button>
   </div>
   <div class="cali-nav-center">
     <span id="chip-users" class="cali-users">👥 0 conectados</span>
@@ -250,6 +280,35 @@ body{display:flex;flex-direction:column;font-family:'Open Sans',Arial,sans-serif
     <button type="button" class="btn-capture" id="cam-capture" title="Capturar">●</button>
     <button type="button" class="btn-mode" id="cam-mode-video" title="Video">🎬 Video</button>
     <button type="button" class="btn-flip" id="cam-flip" title="Voltear cámara">🔄</button>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="settings-modal hidden" id="settings-modal">
+  <div class="settings-box">
+    <div class="settings-header">
+      <span>⚙️ Configuración</span>
+      <button class="close-settings" id="close-settings">✕</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <span class="settings-label">Tu avatar</span>
+        <div class="settings-avatar-grid" id="avatar-grid"></div>
+      </div>
+      <div class="settings-section">
+        <span class="settings-label">Tu nombre (apodo)</span>
+        <input type="text" class="settings-nick-input" id="settings-nick" maxlength="24" placeholder="Escribe tu apodo">
+      </div>
+      <div class="settings-section">
+        <div class="settings-theme-row">
+          <span class="settings-label" style="margin-bottom:0">Modo oscuro</span>
+          <button class="settings-toggle" id="toggle-dark"></button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <button class="settings-btn settings-btn-primary" id="save-settings">Guardar cambios</button>
+      </div>
+    </div>
   </div>
 </div>
 

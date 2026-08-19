@@ -8,7 +8,7 @@
   var NICK = (getCookie("nick") || PARAMS.get("nick") || localStorage.getItem("parcheNick") || "").trim().slice(0, 24);
   var SALA = (PARAMS.get("sala") || localStorage.getItem("parcheSala") || "cali").trim();
   var GENERO = (getCookie("genero") || PARAMS.get("genero") || "").trim();
-  var MI_AVATAR = "🙂";
+  var MI_AVATAR = localStorage.getItem("parcheAvatar") || "🙂";
   var MI_COLOR = "#007a4d";
   var TOKEN = null;
   var SOY_MOD = false;
@@ -351,6 +351,95 @@
       renderPrivChips();
       abrirPrivado(nicks[0]);
     }
+  });
+
+  // ===== Settings =====
+  var AVATARS = ["🙂","😎","🤠","🥳","😇","🤩","😈","💀","👻","🤖","👽","🦁","🐯","🦊","🐱","🐶","🦄","🐸","🐵","🙈","🙉","🙊","🦀","🦞","🌶️","🔥","⚡","💀","🎃","🎸","⚽","🏀","🎯","🎲","🧩","🎨","✈️","🚀","🛸","💡","🔮","💎","🍀","🌴","🌻","🌺","🎵","🎶","🎤"];
+  var settingsModal = $("settings-modal");
+  var avatarGrid = $("avatar-grid");
+  var settingsNick = $("settings-nick");
+  var toggleDark = $("toggle-dark");
+  var selectedAvatar = MI_AVATAR;
+  var darkMode = localStorage.getItem("parcheDark") === "true";
+
+  // Build avatar grid
+  AVATARS.forEach(function(av) {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "settings-avatar-option" + (av === MI_AVATAR ? " selected" : "");
+    btn.textContent = av;
+    btn.addEventListener("click", function() {
+      avatarGrid.querySelectorAll(".selected").forEach(function(el) { el.classList.remove("selected"); });
+      btn.classList.add("selected");
+      selectedAvatar = av;
+    });
+    avatarGrid.appendChild(btn);
+  });
+
+  settingsNick.value = NICK;
+
+  if (darkMode) {
+    toggleDark.classList.add("on");
+    document.body.style.background = "#1a1a2e";
+    document.body.style.color = "#e0e0e0";
+  }
+
+  $("btn-settings").addEventListener("click", function() {
+    settingsNick.value = NICK;
+    selectedAvatar = MI_AVATAR;
+    avatarGrid.querySelectorAll(".selected").forEach(function(el) { el.classList.remove("selected"); });
+    avatarGrid.querySelectorAll(".settings-avatar-option").forEach(function(btn) {
+      if (btn.textContent === MI_AVATAR) btn.classList.add("selected");
+    });
+    settingsModal.classList.remove("hidden");
+  });
+
+  $("close-settings").addEventListener("click", function() {
+    settingsModal.classList.add("hidden");
+  });
+
+  settingsModal.addEventListener("click", function(e) {
+    if (e.target === settingsModal) settingsModal.classList.add("hidden");
+  });
+
+  toggleDark.addEventListener("click", function() {
+    darkMode = !darkMode;
+    toggleDark.classList.toggle("on", darkMode);
+    localStorage.setItem("parcheDark", darkMode);
+    if (darkMode) {
+      document.body.style.background = "#1a1a2e";
+      document.body.style.color = "#e0e0e0";
+    } else {
+      document.body.style.background = "";
+      document.body.style.color = "";
+    }
+  });
+
+  $("save-settings").addEventListener("click", function() {
+    var newNick = settingsNick.value.trim();
+    var data = {};
+    if (selectedAvatar !== MI_AVATAR) data.avatar = selectedAvatar;
+    if (newNick && newNick !== NICK) data.nick = newNick;
+    if (Object.keys(data).length === 0) {
+      settingsModal.classList.add("hidden");
+      return;
+    }
+    apiPost("/api/settings?token=" + TOKEN, data, function(err, res) {
+      if (res && res.ok) {
+        if (res.changes && res.changes.nick) {
+          NICK = res.changes.nick;
+          localStorage.setItem("parcheNick", NICK);
+          anadirMensaje({tipo:"sys", texto:"✅ Ahora te llamas " + NICK});
+        }
+        if (res.changes && res.changes.avatar) {
+          MI_AVATAR = res.changes.avatar;
+          localStorage.setItem("parcheAvatar", MI_AVATAR);
+        }
+        settingsModal.classList.add("hidden");
+      } else if (res && res.error) {
+        anadirMensaje({tipo:"sys", texto:"⚠️ " + res.error});
+      }
+    });
   });
 
   // ===== Usuarios =====
