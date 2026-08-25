@@ -303,8 +303,8 @@
       if (!document.hidden) {
         try { new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=").play(); } catch(e) {}
       }
-      // Auto-abrir chat privado si no estás en ninguno
-      if (!privadoCon && privados[nick].noLeidos === 1) {
+      // Auto-abrir: si no estás en ningún privado, abrir el nuevo
+      if (!privadoCon) {
         abrirPrivado(nick);
       }
     }
