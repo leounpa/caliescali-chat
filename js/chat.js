@@ -853,6 +853,17 @@
       cargarUsuarios();
       polling = setInterval(poll, 1000);
       userPolling = setInterval(cargarUsuarios, 2000);
+
+      // Sponsored banner
+      if (res.sponsored) {
+        var spBanner = $("sponsored-banner");
+        var spText = $("sponsored-text");
+        spText.textContent = res.sponsored.texto;
+        spBanner.style.display = "";
+        spBanner.onclick = function() {
+          if (res.sponsored.link) window.open(res.sponsored.link, "_blank");
+        };
+      }
     });
   }
 

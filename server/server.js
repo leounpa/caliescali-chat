@@ -290,6 +290,19 @@ var servidor = http.createServer(function(req, res) {
         agregarMensaje(sala, { tipo:"sys", texto:"🎉 " + nick + " entró al Parche de Cali", nick:"" });
 
         var miRol = rolDe(nick);
+
+        // Sponsored message
+        var sponsored = null;
+        try {
+          var spPath = path.join(__dirname, "sponsored.json");
+          if (fs.existsSync(spPath)) {
+            var spData = JSON.parse(fs.readFileSync(spPath, "utf8"));
+            if (spData && spData.texto && spData.hasta && spData.hasta > Date.now()) {
+              sponsored = spData;
+            }
+          }
+        } catch(e) {}
+
         jsonRes(res, 200, {
           token:token,
           nick:nick,
@@ -299,7 +312,8 @@ var servidor = http.createServer(function(req, res) {
           puntos:usuariosPuntos[nick].puntos,
           esMod:esMod(nick),
           genero:genero,
-          pais:pais
+          pais:pais,
+          sponsored:sponsored
         });
       }).catch(function() { jsonRes(res, 500, { error:"Error del servidor." }); });
       return;

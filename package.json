@@ -1,7 +1,7 @@
 {
   "name": "el-parche-de-cali",
   "version": "1.0.0",
-  "description": "El Parche de Cali · Chat en vivo para los caleños (Node.js + WebSocket)",
+  "description": "El Parche de Cali · Chat en vivo para los caleños (Node.js + REST API)",
   "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js"
@@ -9,8 +9,6 @@
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {
-    "ws": "^8.18.0"
-  },
+  "dependencies": {},
   "license": "MIT"
 }
