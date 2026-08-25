@@ -424,6 +424,25 @@ var servidor = http.createServer(function(req, res) {
       return;
     }
 
+    // GET /api/priv/inbox?since=0&token=T — todos los privados nuevos de todos los usuarios
+    if (ruta === "/api/priv/inbox" && req.method === "GET") {
+      var token = params.token;
+      if (!token || !usuarios[token]) return jsonRes(res, 401, { error:"Sesión inválida." });
+      var u = usuarios[token];
+      var since = parseInt(params.since || "0", 10);
+      var result = {};
+      Object.keys(privados).forEach(function(key) {
+        if (key.indexOf(u.nick) === -1) return;
+        var other = key.replace(u.nick, "").replace("|", "");
+        var msgs = privados[key].filter(function(m) {
+          return m.from !== u.nick && m.id > since;
+        });
+        if (msgs.length > 0) result[other] = msgs;
+      });
+      jsonRes(res, 200, { inbox: result, lastId: msgIdCounter });
+      return;
+    }
+
     // GET /api/users?sala=X&token=T
     if (ruta === "/api/users" && req.method === "GET") {
       var token = params.token;

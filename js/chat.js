@@ -241,6 +241,7 @@
     if (!privados[nick]) privados[nick] = {msgs:[], lastId:0, noLeidos:0};
     privados[nick].noLeidos = 0;
     lastPrivMsgId = privados[nick].lastId || 0;
+    lastInboxId = Math.max(lastInboxId, lastPrivMsgId);
 
     privBar.classList.remove("hidden");
     privTitle.textContent = "🔒 Privado con " + nick;
@@ -795,9 +796,29 @@
     });
   }
 
+  var lastInboxId = 0;
+
   function poll() {
     cargarMensajes();
-    cargarPrivMensajes();
+    if (privadoCon) {
+      cargarPrivMensajes();
+    } else {
+      cargarInbox();
+    }
+    cargarUsuarios();
+  }
+
+  function cargarInbox() {
+    if (!TOKEN) return;
+    apiGet("/api/priv/inbox?since=" + lastInboxId + "&token=" + TOKEN, function(err, res) {
+      if (err || !res || !res.inbox) return;
+      if (res.lastId > lastInboxId) lastInboxId = res.lastId;
+      Object.keys(res.inbox).forEach(function(nick) {
+        res.inbox[nick].forEach(function(m) {
+          pintarPrivMsg(m);
+        });
+      });
+    });
   }
 
   // ===== Join =====
