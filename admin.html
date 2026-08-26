@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin · El Parche de Cali</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Open Sans',Arial,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh}
+
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-box{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:40px;text-align:center;max-width:360px;width:100%}
+.login-box h1{font-family:'Bebas Neue',sans-serif;font-size:1.8em;letter-spacing:2px;margin-bottom:8px}
+.login-box p{color:#8b949e;font-size:.9em;margin-bottom:20px}
+.login-box input{width:100%;padding:12px;border:1px solid #30363d;border-radius:8px;background:#0d1117;color:#e6edf3;font-size:1em;margin-bottom:12px}
+.login-box input:focus{outline:none;border-color:#3730a3}
+.login-box button{width:100%;padding:12px;border:none;border-radius:8px;background:#3730a3;color:#fff;font-size:1em;font-weight:700;cursor:pointer}
+.login-box button:hover{background:#4338ca}
+.login-error{color:#f85149;font-size:.85em;margin-top:8px;display:none}
+
+.dashboard{display:none;padding:20px;max-width:1200px;margin:0 auto}
+.dash-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px}
+.dash-header h1{font-family:'Bebas Neue',sans-serif;font-size:1.6em;letter-spacing:2px}
+.dash-header .live{display:flex;align-items:center;gap:6px;font-size:.85em;color:#3fb950}
+.dash-header .live .dot{width:8px;height:8px;border-radius:50%;background:#3fb950;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.dash-header button{background:#21262d;border:1px solid #30363d;color:#8b949e;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.85em}
+.dash-header button:hover{background:#30363d;color:#e6edf3}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;text-align:center}
+.stat-card .value{font-family:'Bebas Neue',sans-serif;font-size:2.2em;color:#ffcf00}
+.stat-card .label{font-size:.8em;color:#8b949e;margin-top:4px}
+.stat-card.green .value{color:#3fb950}
+.stat-card.blue .value{color:#58a6ff}
+.stat-card.pink .value{color:#f778ba}
+
+.section{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px}
+.section h2{font-family:'Bebas Neue',sans-serif;font-size:1.2em;letter-spacing:1px;margin-bottom:12px;color:#ffcf00}
+
+.user-list{max-height:300px;overflow-y:auto}
+.user-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #21262d;font-size:.9em}
+.user-row:last-child{border:none}
+.user-row .avatar{font-size:1.3em}
+.user-row .nick{font-weight:600;flex:1}
+.user-row .sala{color:#8b949e;font-size:.8em}
+.user-row .pais{font-size:1.1em}
+.user-row .rol{font-size:.7em;padding:2px 6px;border-radius:4px;background:#30363d;color:#8b949e}
+
+.sala-bar{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #21262d}
+.sala-bar:last-child{border:none}
+.sala-bar .name{font-weight:600;min-width:80px}
+.sala-bar .bar{flex:1;height:20px;background:#21262d;border-radius:4px;overflow:hidden}
+.sala-bar .bar-fill{height:100%;border-radius:4px;transition:width .5s}
+.sala-bar .count{min-width:30px;text-align:right;font-weight:700;color:#ffcf00}
+
+.chart-container{position:relative;height:150px;display:flex;align-items:flex-end;gap:2px;padding-top:10px}
+.chart-bar{flex:1;background:#3730a3;border-radius:3px 3px 0 0;min-height:2px;transition:height .5s;position:relative;cursor:pointer}
+.chart-bar:hover{background:#4338ca}
+.chart-bar .tooltip{display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#30363d;color:#e6edf3;padding:4px 8px;border-radius:4px;font-size:.75em;white-space:nowrap}
+.chart-bar:hover .tooltip{display:block}
+.chart-labels{display:flex;justify-content:space-between;font-size:.7em;color:#8b949e;margin-top:4px}
+
+.sponsored-section{margin-top:16px}
+.sponsored-section input,.sponsored-section textarea{width:100%;padding:8px;border:1px solid #30363d;border-radius:6px;background:#0d1117;color:#e6edf3;font-size:.9em;margin-bottom:8px}
+.sponsored-section textarea{height:60px;resize:vertical}
+.sponsored-section button{background:#e4007c;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <img src="img/favicon.svg" width="48" height="48" alt="Logo" style="margin-bottom:12px">
+    <h1>ADMIN · EL PARCHE</h1>
+    <p>Panel de administración</p>
+    <input type="password" id="pass-input" placeholder="Contraseña" autofocus>
+    <button onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="login-error">Contraseña incorrecta</div>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div class="dashboard" id="dashboard">
+  <div class="dash-header">
+    <div>
+      <h1>📊 PANEL DE CONTROL</h1>
+      <div class="live"><span class="dot"></span> Actualización cada 3s</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="loadStats()">🔄 Actualizar</button>
+      <button onclick="logout()">🚪 Salir</button>
+    </div>
+  </div>
+
+  <div class="stats-grid" id="stats-grid"></div>
+
+  <div class="section">
+    <h2>🏢 USUARIOS CONECTADOS</h2>
+    <div class="user-list" id="user-list"></div>
+  </div>
+
+  <div class="section">
+    <h2>🏠 SALAS</h2>
+    <div id="sala-bars"></div>
+  </div>
+
+  <div class="section">
+    <h2>📈 MENSAJES POR HORA (Hoy)</h2>
+    <div class="chart-container" id="hour-chart"></div>
+    <div class="chart-labels"><span>0:00</span><span>6:00</span><span>12:00</span><span>18:00</span><span>23:00</span></div>
+  </div>
+
+  <div class="section">
+    <h2>📅 ACTIVIDAD RECIENTE</h2>
+    <div id="daily-list" style="max-height:200px;overflow-y:auto;font-size:.85em"></div>
+  </div>
+
+  <div class="section sponsored-section">
+    <h2>📢 BANNER PATROCINADO</h2>
+    <textarea id="sp-texto" placeholder="Texto del anuncio..."></textarea>
+    <input type="text" id="sp-link" placeholder="Link (https://...)" >
+    <input type="number" id="sp-dias" placeholder="Días de duración" value="7" style="width:100px">
+    <button onclick="saveSponsored()">💾 Guardar banner</button>
+    <div id="sp-msg" style="font-size:.8em;margin-top:6px;color:#3fb950;display:none"></div>
+  </div>
+</div>
+
+<script>
+var ADMIN_TOKEN = localStorage.getItem("adminToken");
+var refreshInterval = null;
+
+if (ADMIN_TOKEN) showDashboard();
+
+document.getElementById("pass-input").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") doLogin();
+});
+
+function doLogin() {
+  var pass = document.getElementById("pass-input").value;
+  apiPost("/api/admin/login", {pass:pass}, function(err, res) {
+    if (res && res.ok) {
+      ADMIN_TOKEN = res.token;
+      localStorage.setItem("adminToken", ADMIN_TOKEN);
+      showDashboard();
+    } else {
+      document.getElementById("login-error").style.display = "block";
+    }
+  });
+}
+
+function logout() {
+  ADMIN_TOKEN = null;
+  localStorage.removeItem("adminToken");
+  if (refreshInterval) clearInterval(refreshInterval);
+  document.getElementById("dashboard").style.display = "none";
+  document.getElementById("login-screen").style.display = "flex";
+}
+
+function showDashboard() {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
+  loadStats();
+  refreshInterval = setInterval(loadStats, 3000);
+}
+
+function apiGet(url, cb) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", url, true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      try { cb(null, JSON.parse(xhr.responseText)); }
+      catch(e) { cb(e, null); }
+    }
+  };
+  xhr.send();
+}
+
+function apiPost(url, data, cb) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", url, true);
+  xhr.setRequestHeader("Content-Type", "application/json");
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      try { cb(null, JSON.parse(xhr.responseText)); }
+      catch(e) { cb(e, null); }
+    }
+  };
+  xhr.send(JSON.stringify(data));
+}
+
+function loadStats() {
+  if (!ADMIN_TOKEN) return;
+  apiGet("/api/admin/stats?token=" + ADMIN_TOKEN, function(err, res) {
+    if (err || !res || res.error) {
+      if (res && res.error === "No autorizado.") logout();
+      return;
+    }
+    renderStats(res);
+  });
+}
+
+function renderStats(d) {
+  // Stat cards
+  document.getElementById("stats-grid").innerHTML =
+    '<div class="stat-card green"><div class="value">' + d.conectados + '</div><div class="label">Conectados ahora</div></div>' +
+    '<div class="stat-card"><div class="value">' + d.totalConexiones + '</div><div class="label">Total conexiones</div></div>' +
+    '<div class="stat-card blue"><div class="value">' + d.totalMensajes + '</div><div class="label">Mensajes totales</div></div>' +
+    '<div class="stat-card pink"><div class="value">' + d.totalPrivados + '</div><div class="label">Mensajes privados</div></div>' +
+    '<div class="stat-card"><div class="value">' + d.totalArchivos + '</div><div class="label">Archivos enviados</div></div>' +
+    '<div class="stat-card green"><div class="value">' + d.usuariosUnicos + '</div><div class="label">Usuarios únicos</div></div>';
+
+  // Users
+  var userList = document.getElementById("user-list");
+  if (d.usuarios.length === 0) {
+    userList.innerHTML = '<div style="padding:20px;text-align:center;color:#8b949e">Nadie conectado</div>';
+  } else {
+    var html = "";
+    d.usuarios.sort(function(a,b) { return a.nick.localeCompare(b.nick); }).forEach(function(u) {
+      html += '<div class="user-row">' +
+        '<span class="avatar">' + (u.avatar||"🙂") + '</span>' +
+        '<span class="nick">' + esc(u.nick) + '</span>' +
+        '<span class="sala">' + esc(u.sala) + '</span>' +
+        '<span class="pais">' + (u.pais||"🌐") + '</span>' +
+        '<span class="rol">' + u.rol + '</span>' +
+        '</div>';
+    });
+    userList.innerHTML = html;
+  }
+
+  // Salas
+  var maxUsers = Math.max.apply(null, d.salas.map(function(s){return s.usuarios;})) || 1;
+  var salaColors = ["#3730a3","#065f46","#9d174d","#92400e","#0e7490","#7c3aed"];
+  var salaHtml = "";
+  d.salas.forEach(function(s, i) {
+    var pct = Math.max(5, (s.usuarios / maxUsers) * 100);
+    salaHtml += '<div class="sala-bar">' +
+      '<span class="name">' + s.nombre + '</span>' +
+      '<div class="bar"><div class="bar-fill" style="width:' + pct + '%;background:' + salaColors[i] + '"></div></div>' +
+      '<span class="count">' + s.usuarios + '</span></div>';
+  });
+  document.getElementById("sala-bars").innerHTML = salaHtml;
+
+  // Hour chart
+  var maxHora = 1;
+  for (var i = 0; i < 24; i++) { if ((d.porHora[i]||0) > maxHora) maxHora = d.porHora[i]; }
+  var chartHtml = "";
+  for (var i = 0; i < 24; i++) {
+    var val = d.porHora[i] || 0;
+    var h = Math.max(2, (val / maxHora) * 140);
+    chartHtml += '<div class="chart-bar" style="height:' + h + 'px"><div class="tooltip">' + i + ':00 — ' + val + ' conex</div></div>';
+  }
+  document.getElementById("hour-chart").innerHTML = chartHtml;
+
+  // Daily
+  var days = Object.keys(d.diario).sort().reverse().slice(0, 14);
+  var dailyHtml = "";
+  days.forEach(function(day) {
+    var dd = d.diario[day];
+    dailyHtml += '<div style="display:flex;gap:16px;padding:6px 0;border-bottom:1px solid #21262d">' +
+      '<span style="font-weight:600;min-width:90px">' + day + '</span>' +
+      '<span style="color:#3fb950">👥 ' + dd.conexiones + '</span>' +
+      '<span style="color:#58a6ff">💬 ' + dd.mensajes + '</span>' +
+      '<span style="color:#f778ba">🔒 ' + dd.privados + '</span>' +
+      '<span style="color:#d29922">📎 ' + dd.archivos + '</span>' +
+      '<span style="color:#8b949e">👤 ' + (dd.unicos ? dd.unicos.length : 0) + ' únicos</span>' +
+      '</div>';
+  });
+  document.getElementById("daily-list").innerHTML = dailyHtml || '<div style="padding:12px;color:#8b949e">Sin datos aún</div>';
+}
+
+function saveSponsored() {
+  var texto = document.getElementById("sp-texto").value;
+  var link = document.getElementById("sp-link").value;
+  var dias = parseInt(document.getElementById("sp-dias").value) || 7;
+  var hasta = Date.now() + dias * 86400000;
+  apiPost("/api/admin/sponsored?token=" + ADMIN_TOKEN, {texto:texto, link:link, hasta:hasta}, function(err, res) {
+    if (res && res.ok) {
+      var msg = document.getElementById("sp-msg");
+      msg.textContent = "✅ Banner guardado por " + dias + " días";
+      msg.style.display = "block";
+      setTimeout(function() { msg.style.display = "none"; }, 3000);
+    }
+  });
+}
+
+function esc(t) {
+  var div = document.createElement("div");
+  div.textContent = t;
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>

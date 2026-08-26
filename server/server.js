@@ -32,6 +32,54 @@ const TIPOS = {
 
 const SALAS = { cali:"#Cali", salsa:"#Salsa", rumba:"#Rumba", colombia:"#Colombia", general:"#General", amistad:"#Amistad" };
 
+// ===== Analytics =====
+const ADMIN_PASS = "DJLOCO1987";
+let adminToken = null;
+const ARCHIVO_STATS = path.join(__dirname, "stats.json");
+let stats = { totalConexiones:0, totalMensajes:0, totalPrivados:0, totalArchivos:0, usuariosUnicos: new Set(), diario:{}, porHora:{} };
+
+function cargarStats() {
+  try {
+    if (fs.existsSync(ARCHIVO_STATS)) {
+      var data = JSON.parse(fs.readFileSync(ARCHIVO_STATS, "utf8"));
+      stats.totalConexiones = data.totalConexiones || 0;
+      stats.totalMensajes = data.totalMensajes || 0;
+      stats.totalPrivados = data.totalPrivados || 0;
+      stats.totalArchivos = data.totalArchivos || 0;
+      stats.diario = data.diario || {};
+      stats.porHora = data.porHora || {};
+      stats.usuariosUnicos = new Set(data.usuariosUnicos || []);
+    }
+  } catch(e) { stats = { totalConexiones:0, totalMensajes:0, totalPrivados:0, totalArchivos:0, usuariosUnicos:new Set(), diario:{}, porHora:{} }; }
+}
+function guardarStats() {
+  try {
+    var out = {
+      totalConexiones:stats.totalConexiones, totalMensajes:stats.totalMensajes,
+      totalPrivados:stats.totalPrivados, totalArchivos:stats.totalArchivos,
+      usuariosUnicos:Array.from(stats.usuariosUnicos), diario:stats.diario, porHora:stats.porHora
+    };
+    fs.writeFileSync(ARCHIVO_STATS, JSON.stringify(out, null, 2));
+  } catch(e) {}
+}
+cargarStats();
+
+function hoy() { var d=new Date(); return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
+function registrarConexion(nick) {
+  stats.totalConexiones++;
+  stats.usuariosUnicos.add(nick.toLowerCase());
+  var h = hoy();
+  if (!stats.diario[h]) stats.diario[h] = {conexiones:0,mensajes:0,privados:0,archivos:0,unicos:[]};
+  stats.diario[h].conexiones++;
+  if (!stats.diario[h].unicos.includes(nick.toLowerCase())) stats.diario[h].unicos.push(nick.toLowerCase());
+  var hora = new Date().getHours();
+  stats.porHora[hora] = (stats.porHora[hora] || 0) + 1;
+  guardarStats();
+}
+function registrarMensaje() { stats.totalMensajes++; var h=hoy(); if(!stats.diario[h])stats.diario[h]={conexiones:0,mensajes:0,privados:0,archivos:0,unicos:[]}; stats.diario[h].mensajes++; if(stats.totalMensajes%5===0)guardarStats(); }
+function registrarPrivado() { stats.totalPrivados++; var h=hoy(); if(!stats.diario[h])stats.diario[h]={conexiones:0,mensajes:0,privados:0,archivos:0,unicos:[]}; stats.diario[h].privados++; if(stats.totalPrivados%5===0)guardarStats(); }
+function registrarArchivo() { stats.totalArchivos++; var h=hoy(); if(!stats.diario[h])stats.diario[h]={conexiones:0,mensajes:0,privados:0,archivos:0,unicos:[]}; stats.diario[h].archivos++; guardarStats(); }
+
 // ===== Country flags from IP (free ip-api) =====
 const countryCache = new Map();
 function getCountryFlag(ip) {
@@ -288,6 +336,7 @@ var servidor = http.createServer(function(req, res) {
         }
 
         agregarMensaje(sala, { tipo:"sys", texto:"🎉 " + nick + " entró al Parche de Cali", nick:"" });
+        registrarConexion(nick);
 
         var miRol = rolDe(nick);
 
@@ -347,6 +396,7 @@ var servidor = http.createServer(function(req, res) {
           sumarPuntos(u.nick, PUNTOS_POR_MSG);
           var rol = rolDe(u.nick);
           agregarMensaje(u.sala, { tipo:"archivo", nick:u.nick, avatar:u.avatar, color:u.color, nombre:b.nombre, mime:b.mime, datos:b.datos, rol:rol.nombre, puntos:(usuariosPuntos[u.nick]||{}).puntos||0, pais:u.pais||"🌐" });
+          registrarArchivo();
           return jsonRes(res, 200, { ok:true });
         }
 
@@ -364,6 +414,7 @@ var servidor = http.createServer(function(req, res) {
 
         var r = sumarPuntos(u.nick, PUNTOS_POR_MSG);
         agregarMensaje(u.sala, { tipo:"msg", nick:u.nick, avatar:u.avatar, color:u.color, texto:texto, rol:r.rolNuevo.nombre, puntos:(usuariosPuntos[u.nick]||{}).puntos||0, pais:u.pais||"🌐" });
+        registrarMensaje();
 
         if (r.subio) {
           agregarMensaje(u.sala, { tipo:"sys", texto:"🎉 ¡" + u.nick + " alcanzó el rango de " + r.rolNuevo.label + "! 🏆", nick:"" });
@@ -393,6 +444,7 @@ var servidor = http.createServer(function(req, res) {
         if (!privados[key]) privados[key] = [];
         privados[key].push({ id:++msgIdCounter, from:u.nick, texto:texto, fecha:Date.now(), tipo:"msg", avatar:u.avatar, color:u.color, pais:u.pais||"🌐" });
         if (privados[key].length > 100) privados[key] = privados[key].slice(-50);
+        registrarPrivado();
 
         jsonRes(res, 200, { ok:true });
       }).catch(function() { jsonRes(res, 500, { error:"Error del servidor." }); });
@@ -551,6 +603,58 @@ var servidor = http.createServer(function(req, res) {
         }
         jsonRes(res, 200, { ok:true });
       }).catch(function() { jsonRes(res, 200, { ok:true }); });
+      return;
+    }
+
+    // POST /api/admin/login
+    if (ruta === "/api/admin/login" && req.method === "POST") {
+      parseBody(req).then(function(b) {
+        if (b.pass === ADMIN_PASS) {
+          adminToken = crypto.randomBytes(16).toString("hex");
+          jsonRes(res, 200, { ok:true, token:adminToken });
+        } else {
+          jsonRes(res, 403, { error:"Contraseña incorrecta." });
+        }
+      }).catch(function() { jsonRes(res, 500, { error:"Error." }); });
+      return;
+    }
+
+    // GET /api/admin/stats?token=T
+    if (ruta === "/api/admin/stats" && req.method === "GET") {
+      if (params.token !== adminToken) return jsonRes(res, 403, { error:"No autorizado." });
+      var usuariosActivos = [];
+      Object.keys(usuarios).forEach(function(t) {
+        var u = usuarios[t];
+        var r = rolDe(u.nick);
+        usuariosActivos.push({ nick:u.nick, sala:u.sala, avatar:u.avatar, rol:r.nombre, pais:u.pais||"🌐", visto:u.visto });
+      });
+      jsonRes(res, 200, {
+        totalConexiones: stats.totalConexiones,
+        totalMensajes: stats.totalMensajes,
+        totalPrivados: stats.totalPrivados,
+        totalArchivos: stats.totalArchivos,
+        usuariosUnicos: stats.usuariosUnicos.size || (stats.usuariosUnicos.length || 0),
+        conectados: usuariosActivos.length,
+        usuarios: usuariosActivos,
+        diario: stats.diario,
+        porHora: stats.porHora,
+        salas: Object.keys(SALAS).map(function(k) {
+          var count = 0;
+          Object.keys(usuarios).forEach(function(t) { if(usuarios[t].sala===k) count++; });
+          return { id:k, nombre:SALAS[k], usuarios:count };
+        })
+      });
+      return;
+    }
+
+    // POST /api/admin/sponsored?token=T
+    if (ruta === "/api/admin/sponsored" && req.method === "POST") {
+      if (params.token !== adminToken) return jsonRes(res, 403, { error:"No autorizado." });
+      parseBody(req).then(function(b) {
+        var spData = { texto: b.texto || "", link: b.link || "", hasta: b.hasta || Date.now() + 86400000 };
+        fs.writeFileSync(path.join(__dirname, "sponsored.json"), JSON.stringify(spData, null, 2));
+        jsonRes(res, 200, { ok:true });
+      }).catch(function() { jsonRes(res, 500, { error:"Error." }); });
       return;
     }
 
