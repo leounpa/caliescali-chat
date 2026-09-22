@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Términos y Condiciones · El Parche de Cali</title>
+<meta name="description" content="Términos y condiciones de uso de El Parche de Cali: normas del chat gratis sin registro, moderación y responsabilidades.">
+<link rel="canonical" href="https://el-parche-de-cali.onrender.com/terminos-y-condiciones.html">
+<meta property="og:title" content="Términos y Condiciones · El Parche de Cali">
+<meta property="og:description" content="Normas de uso del chat gratis de Cali: respeto, nada de spam ni contenido ilegal.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://el-parche-de-cali.onrender.com/terminos-y-condiciones.html">
+<link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<div class="bandera-top">
+  <span></span><span></span><span></span>
+</div>
+
+<nav class="navbar-parche" role="navigation" aria-label="Menú principal">
+  <div class="navbar-parche-brand">
+    <a href="index.html" class="marca">
+      <span class="marca-ico">💃</span>
+      <span class="marca-txt">
+        <strong>El Parche de Cali</strong>
+        <small>la sucursal del cielo en línea</small>
+      </span>
+    </a>
+    <button type="button" class="navbar-burger" id="navBurger" aria-label="Menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="navbar-parche-menu" id="navMenu">
+    <a class="navbar-item" href="index.html#entrada">Chatear</a>
+    <a class="navbar-item" href="salas.html">Salas de chat</a>
+    <a class="navbar-item" href="faq.html">Preguntas frecuentes</a>
+  </div>
+</nav>
+
+<main class="contenedor">
+  <section class="normas">
+    <h1>Términos y Condiciones</h1>
+    <p>Al entrar a El Parche de Cali aceptas estas normas:</p>
+    <ul class="lista-terminos">
+      <li>Eres el único responsable de tu apodo y de lo que escribes o compartes.</li>
+      <li>No está permitido el contenido ilegal. En especial, está prohibida cualquier imagen, video o material de explotación o abuso de menores. Quien comparta ese contenido será baneado permanentemente y reportado a las autoridades.</li>
+      <li>En las salas públicas aplica un filtro de lenguaje ofensivo: las infracciones repetidas producen expulsiones cada vez más largas.</li>
+      <li>No publiques datos personales de otras personas (documentos, direcciones, fotos ajenas).</li>
+      <li>No hagas spam ni anuncies otros sitios o salas de chat.</li>
+      <li>Los moderadores y administradores pueden expulsar, silenciar o banear a quien incumpla las normas.</li>
+      <li>El servicio es gratuito y se ofrece "tal cual", sin garantías de disponibilidad permanente.</li>
+    </ul>
+
+    <p>Lee también nuestra <a href="politicas-de-privacidad.html">Política de Privacidad</a>, las <a href="recomendaciones-de-seguridad.html">Recomendaciones de Seguridad</a> y la <a href="politicas-de-cookies.html">Política de Cookies</a>.</p>
+
+    <p><a href="index.html" class="btn-chatear-parche">← Volver al inicio</a></p>
+  </section>
+</main>
+
+<footer class="pie-parche">
+  <div class="contenedor footer-grid">
+    <nav class="footer-col" aria-label="El Parche de Cali">
+      <h2>El Parche de Cali</h2>
+      <a href="salas.html">Salas de chat</a>
+      <a href="faq.html">Preguntas frecuentes</a>
+      <a href="anuncia.html">Anuncia aquí</a>
+    </nav>
+    <nav class="footer-col" aria-label="Seguridad y comunidad">
+      <h2>Seguridad y comunidad</h2>
+      <a href="recomendaciones-de-seguridad.html">Recomendaciones de seguridad</a>
+      <a href="index.html#normas">Normas de convivencia</a>
+    </nav>
+    <nav class="footer-col" aria-label="Legal">
+      <h2>Legal</h2>
+      <a href="terminos-y-condiciones.html">Términos y condiciones</a>
+      <a href="politicas-de-privacidad.html">Políticas de privacidad</a>
+      <a href="politicas-de-cookies.html">Política de cookies</a>
+    </nav>
+  </div>
+  <div class="footer-bottom">
+    <div class="contenedor">
+      <p><strong>El Parche de Cali</strong> · la sucursal del cielo en línea</p>
+      <p>Copyright © <span id="anio">2026</span> · Hecho con 💛💚❤️ para los caleños</p>
+    </div>
+  </div>
+</footer>
+<script>
+(function () {
+  var burger = document.getElementById("navBurger");
+  var menu = document.getElementById("navMenu");
+  if (burger && menu) burger.addEventListener("click", function () { menu.classList.toggle("abierto"); });
+  var anio = document.getElementById("anio");
+  if (anio) anio.textContent = new Date().getFullYear();
+})();
+</script>
+</body>
+</html>

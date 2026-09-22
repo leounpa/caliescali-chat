@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Cookies · El Parche de Cali</title>
+<meta name="description" content="Política de cookies de El Parche de Cali: qué cookies usamos, para qué sirven y cómo aceptarlas, rechazarlas o borrarlas.">
+<link rel="canonical" href="https://el-parche-de-cali.onrender.com/politicas-de-cookies.html">
+<meta property="og:title" content="Política de Cookies · El Parche de Cali">
+<meta property="og:description" content="Solo usamos cookies funcionales para recordarte. Sin rastreo publicitario.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://el-parche-de-cali.onrender.com/politicas-de-cookies.html">
+<link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<div class="bandera-top">
+  <span></span><span></span><span></span>
+</div>
+
+<nav class="navbar-parche" role="navigation" aria-label="Menú principal">
+  <div class="navbar-parche-brand">
+    <a href="index.html" class="marca">
+      <span class="marca-ico">💃</span>
+      <span class="marca-txt">
+        <strong>El Parche de Cali</strong>
+        <small>la sucursal del cielo en línea</small>
+      </span>
+    </a>
+    <button type="button" class="navbar-burger" id="navBurger" aria-label="Menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="navbar-parche-menu" id="navMenu">
+    <a class="navbar-item" href="index.html#entrada">Chatear</a>
+    <a class="navbar-item" href="salas.html">Salas de chat</a>
+    <a class="navbar-item" href="faq.html">Preguntas frecuentes</a>
+  </div>
+</nav>
+
+<main class="contenedor">
+  <section class="normas">
+    <h1>Política de Cookies</h1>
+    <p>El Parche de Cali usa pocas cookies, y solo para que el sitio funcione. <strong>No usamos cookies de rastreo publicitario.</strong></p>
+
+    <h2>Cookies propias (funcionales)</h2>
+    <table class="tabla-cookies">
+      <thead>
+        <tr><th>Cookie</th><th>Para qué sirve</th><th>Duración</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>nick</code></td><td>Recordar tu apodo si marcas "Recordarme".</td><td>Hasta 1000 días (o se borra si no marcas la casilla).</td></tr>
+        <tr><td><code>genero</code></td><td>Recordar tu género seleccionado.</td><td>Hasta 1000 días (o se borra si no marcas la casilla).</td></tr>
+        <tr><td><code>parcheCookies</code></td><td>Recordar si aceptaste o rechazaste el aviso de cookies.</td><td>1 año.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Almacenamiento local</h2>
+    <p>Además guardamos en tu navegador (localStorage): tu apodo, sala, avatar y puntos del sistema de rangos. Todo se queda en tu dispositivo y puedes borrarlo desde la configuración de tu navegador.</p>
+
+    <h2>Servicios de terceros</h2>
+    <p>Al usar videollamadas (Jitsi Meet), la radio (emisoras en vivo) o al cargar librerías desde CDN, esos servicios pueden usar sus propias cookies según sus políticas.</p>
+
+    <h2>¿Cómo controlo las cookies?</h2>
+    <ul class="lista-terminos">
+      <li>Con el banner de cookies del inicio puedes <strong>aceptar</strong> o <strong>rechazar</strong>. Si rechazas, el sitio sigue funcionando, pero no recordaremos tu apodo.</li>
+      <li>Puedes borrar las cookies en cualquier momento desde la configuración de tu navegador.</li>
+    </ul>
+
+    <p>Ver también: <a href="politicas-de-privacidad.html">Política de Privacidad</a> · <a href="terminos-y-condiciones.html">Términos y Condiciones</a>.</p>
+
+    <p><a href="index.html" class="btn-chatear-parche">← Volver al inicio</a></p>
+  </section>
+</main>
+
+<footer class="pie-parche">
+  <div class="contenedor footer-grid">
+    <nav class="footer-col" aria-label="El Parche de Cali">
+      <h2>El Parche de Cali</h2>
+      <a href="salas.html">Salas de chat</a>
+      <a href="faq.html">Preguntas frecuentes</a>
+      <a href="anuncia.html">Anuncia aquí</a>
+    </nav>
+    <nav class="footer-col" aria-label="Seguridad y comunidad">
+      <h2>Seguridad y comunidad</h2>
+      <a href="recomendaciones-de-seguridad.html">Recomendaciones de seguridad</a>
+      <a href="index.html#normas">Normas de convivencia</a>
+    </nav>
+    <nav class="footer-col" aria-label="Legal">
+      <h2>Legal</h2>
+      <a href="terminos-y-condiciones.html">Términos y condiciones</a>
+      <a href="politicas-de-privacidad.html">Políticas de privacidad</a>
+      <a href="politicas-de-cookies.html">Política de cookies</a>
+    </nav>
+  </div>
+  <div class="footer-bottom">
+    <div class="contenedor">
+      <p><strong>El Parche de Cali</strong> · la sucursal del cielo en línea</p>
+      <p>Copyright © <span id="anio">2026</span> · Hecho con 💛💚❤️ para los caleños</p>
+    </div>
+  </div>
+</footer>
+<script>
+(function () {
+  var burger = document.getElementById("navBurger");
+  var menu = document.getElementById("navMenu");
+  if (burger && menu) burger.addEventListener("click", function () { menu.classList.toggle("abierto"); });
+  var anio = document.getElementById("anio");
+  if (anio) anio.textContent = new Date().getFullYear();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat de Colombia Gratis · Conoce Gente de Todo el País</title>
+<meta name="description" content="Entra al Chat de Colombia: conoce personas de todo el país, de Bogotá a Medellín, de la costa al llano. Gratis y sin registro.">
+<meta name="keywords" content="chat de colombia, chat colombia gratis, chatear colombianos, chat bogota medellin cali">
+<link rel="canonical" href="https://el-parche-de-cali.onrender.com/chat-de-colombia.html">
+<meta property="og:title" content="Chat de Colombia Gratis · El Parche de Cali">
+<meta property="og:description" content="Conoce personas de todo el país. Gratis, sin registro y en vivo.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://el-parche-de-cali.onrender.com/chat-de-colombia.html">
+<meta property="og:image" content="https://el-parche-de-cali.onrender.com/img/logo.svg">
+<link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<div class="bandera-top">
+  <span></span><span></span><span></span>
+</div>
+
+<nav class="navbar-parche" role="navigation" aria-label="Menú principal">
+  <div class="navbar-parche-brand">
+    <a href="index.html" class="marca">
+      <span class="marca-ico">💃</span>
+      <span class="marca-txt">
+        <strong>El Parche de Cali</strong>
+        <small>la sucursal del cielo en línea</small>
+      </span>
+    </a>
+    <button type="button" class="navbar-burger" id="navBurger" aria-label="Menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="navbar-parche-menu" id="navMenu">
+    <a class="navbar-item" href="index.html#entrada">Chatear</a>
+    <a class="navbar-item" href="salas.html">Salas de chat</a>
+    <a class="navbar-item" href="faq.html">Preguntas frecuentes</a>
+  </div>
+</nav>
+
+<main class="contenedor">
+  <section class="section p-3">
+    <h1 class="title is-3"><i class="fas fa-flag"></i> Chat de Colombia</h1>
+    <p>Bienvenido al <strong>Chat de Colombia</strong>: conoce personas de todo el país, desde Bogotá y Medellín hasta la costa y el llano. El punto de encuentro nacional del parche. Entra gratis, sin registro, solo con tu apodo.</p>
+
+    <h2 class="title is-5 mt-4">Entrar al Chat de Colombia</h2>
+    <form action="/webchat" method="POST" class="box" style="max-width:480px">
+      <div class="field">
+        <div class="control has-icons-left">
+          <input name="nick" type="text" placeholder="Escribe tu nombre o apodo" class="input" maxlength="24" required>
+          <span class="icon is-small is-left"><i class="fas fa-user-circle"></i></span>
+        </div>
+      </div>
+      <div class="field">
+        Soy:
+        <div class="select is-small">
+          <select name="genero">
+            <option>Hombre</option>
+            <option>Mujer</option>
+            <option selected>No especificar</option>
+          </select>
+        </div>
+      </div>
+      <input type="hidden" name="idNC" value="colombia">
+      <input type="hidden" name="isHot" value="no">
+      <input type="hidden" name="chats" value="colombia">
+      <input type="hidden" name="autoConnect" value="true">
+      <div class="field">
+        <button class="button has-background-danger-dark has-text-white is-fullwidth">Entrar al Chat de Colombia</button>
+      </div>
+      <p class="is-size-7">Al entrar aceptas los <a href="terminos-y-condiciones.html">términos</a> y las <a href="politicas-de-privacidad.html">políticas de privacidad</a>.</p>
+    </form>
+
+    <h2 class="title is-5 mt-5">Otras salas del parche</h2>
+    <p>
+      <a href="chat-de-cali.html">Chat de Cali</a> ·
+      <a href="chat-de-salsa.html">Chat de Salsa</a> ·
+      <a href="chat-de-rumba.html">Chat de Rumba</a> ·
+      <a href="chat-general.html">Chat General</a> ·
+      <a href="chat-de-amistad.html">Chat de Amistad</a> ·
+      <a href="salas.html">Ver todas</a>
+    </p>
+  </section>
+</main>
+
+<footer class="pie-parche">
+  <div class="contenedor footer-grid">
+    <nav class="footer-col" aria-label="El Parche de Cali">
+      <h2>El Parche de Cali</h2>
+      <a href="salas.html">Salas de chat</a>
+      <a href="faq.html">Preguntas frecuentes</a>
+      <a href="anuncia.html">Anuncia aquí</a>
+    </nav>
+    <nav class="footer-col" aria-label="Seguridad y comunidad">
+      <h2>Seguridad y comunidad</h2>
+      <a href="recomendaciones-de-seguridad.html">Recomendaciones de seguridad</a>
+      <a href="index.html#normas">Normas de convivencia</a>
+    </nav>
+    <nav class="footer-col" aria-label="Legal">
+      <h2>Legal</h2>
+      <a href="terminos-y-condiciones.html">Términos y condiciones</a>
+      <a href="politicas-de-privacidad.html">Políticas de privacidad</a>
+      <a href="politicas-de-cookies.html">Política de cookies</a>
+    </nav>
+  </div>
+  <div class="footer-bottom">
+    <div class="contenedor">
+      <p><strong>El Parche de Cali</strong> · la sucursal del cielo en línea</p>
+      <p>Copyright © <span id="anio">2026</span> · Hecho con 💛💚❤️ para los caleños</p>
+    </div>
+  </div>
+</footer>
+<script>
+(function () {
+  var burger = document.getElementById("navBurger");
+  var menu = document.getElementById("navMenu");
+  if (burger && menu) burger.addEventListener("click", function () { menu.classList.toggle("abierto"); });
+  var anio = document.getElementById("anio");
+  if (anio) anio.textContent = new Date().getFullYear();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recomendaciones de Seguridad · El Parche de Cali</title>
+<meta name="description" content="10 recomendaciones de seguridad para chatear tranquilo en El Parche de Cali: protege tus datos, detecta engaños y reporta abusos.">
+<link rel="canonical" href="https://el-parche-de-cali.onrender.com/recomendaciones-de-seguridad.html">
+<meta property="og:title" content="Recomendaciones de Seguridad · El Parche de Cali">
+<meta property="og:description" content="10 consejos para chatear seguro: no compartas datos personales y reporta cualquier abuso.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://el-parche-de-cali.onrender.com/recomendaciones-de-seguridad.html">
+<link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<div class="bandera-top">
+  <span></span><span></span><span></span>
+</div>
+
+<nav class="navbar-parche" role="navigation" aria-label="Menú principal">
+  <div class="navbar-parche-brand">
+    <a href="index.html" class="marca">
+      <span class="marca-ico">💃</span>
+      <span class="marca-txt">
+        <strong>El Parche de Cali</strong>
+        <small>la sucursal del cielo en línea</small>
+      </span>
+    </a>
+    <button type="button" class="navbar-burger" id="navBurger" aria-label="Menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="navbar-parche-menu" id="navMenu">
+    <a class="navbar-item" href="index.html#entrada">Chatear</a>
+    <a class="navbar-item" href="salas.html">Salas de chat</a>
+    <a class="navbar-item" href="faq.html">Preguntas frecuentes</a>
+  </div>
+</nav>
+
+<main class="contenedor">
+  <section class="normas">
+    <h1>Recomendaciones de Seguridad</h1>
+    <p>Tu seguridad es lo primero. Sigue estos 10 consejos para disfrutar del parche sin riesgos:</p>
+    <ol class="lista-terminos">
+      <li><strong>No compartas datos personales.</strong> Nunca publiques tu dirección, teléfono, documentos ni la ubicación exacta donde estás.</li>
+      <li><strong>Cuida tus fotos y videos.</strong> No envíes imágenes íntimas ni archivos comprometedores a desconocidos.</li>
+      <li><strong>Desconfía de los enlaces.</strong> No abras links sospechosos que te pasen en el chat; pueden ser phishing o virus.</li>
+      <li><strong>No envíes dinero.</strong> Nadie del chat —ni supuestos moderadores— te pedirá giros, recargas o claves. Si alguien lo hace, repórtalo.</li>
+      <li><strong>Citas presenciales con precaución.</strong> Si conoces a alguien y quieren verse, avísale a una persona de confianza, quédate en lugares públicos y no vayas solo(a).</li>
+      <li><strong>Protege a los menores.</strong> El contenido ilegal, en especial el relacionado con menores, está prohibido, se banea permanentemente y se reporta a las autoridades.</li>
+      <li><strong>Usa los privados con cabeza.</strong> Los mensajes privados solo los ven los dos participantes, pero igual aplica todo lo anterior.</li>
+      <li><strong>Reporta el abuso.</strong> Ante acoso, spam o contenido ilegal, avisa a los moderadores de la sala o escribe al <a href="https://wa.me/573104311704">WhatsApp de contacto</a>.</li>
+      <li><strong>No anuncies otros sitios.</strong> El spam de otras salas o páginas termina en expulsión.</li>
+      <li><strong>Si algo te incomoda, salte.</strong> Puedes cambiar de sala o salir en cualquier momento; nadie puede obligarte a quedarte.</li>
+    </ol>
+
+    <p>Ver también: <a href="terminos-y-condiciones.html">Términos y Condiciones</a> · <a href="politicas-de-privacidad.html">Política de Privacidad</a>.</p>
+
+    <p><a href="index.html" class="btn-chatear-parche">← Volver al inicio</a></p>
+  </section>
+</main>
+
+<footer class="pie-parche">
+  <div class="contenedor footer-grid">
+    <nav class="footer-col" aria-label="El Parche de Cali">
+      <h2>El Parche de Cali</h2>
+      <a href="salas.html">Salas de chat</a>
+      <a href="faq.html">Preguntas frecuentes</a>
+      <a href="anuncia.html">Anuncia aquí</a>
+    </nav>
+    <nav class="footer-col" aria-label="Seguridad y comunidad">
+      <h2>Seguridad y comunidad</h2>
+      <a href="recomendaciones-de-seguridad.html">Recomendaciones de seguridad</a>
+      <a href="index.html#normas">Normas de convivencia</a>
+    </nav>
+    <nav class="footer-col" aria-label="Legal">
+      <h2>Legal</h2>
+      <a href="terminos-y-condiciones.html">Términos y condiciones</a>
+      <a href="politicas-de-privacidad.html">Políticas de privacidad</a>
+      <a href="politicas-de-cookies.html">Política de cookies</a>
+    </nav>
+  </div>
+  <div class="footer-bottom">
+    <div class="contenedor">
+      <p><strong>El Parche de Cali</strong> · la sucursal del cielo en línea</p>
+      <p>Copyright © <span id="anio">2026</span> · Hecho con 💛💚❤️ para los caleños</p>
+    </div>
+  </div>
+</footer>
+<script>
+(function () {
+  var burger = document.getElementById("navBurger");
+  var menu = document.getElementById("navMenu");
+  if (burger && menu) burger.addEventListener("click", function () { menu.classList.toggle("abierto"); });
+  var anio = document.getElementById("anio");
+  if (anio) anio.textContent = new Date().getFullYear();
+})();
+</script>
+</body>
+</html>

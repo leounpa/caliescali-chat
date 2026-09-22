@@ -26,6 +26,8 @@ const TIPOS = {
   "ico": "image/x-icon",
   "webp": "image/webp",
   "json": "application/json",
+  "xml": "application/xml; charset=utf-8",
+  "txt": "text/plain; charset=utf-8",
   "woff": "font/woff",
   "woff2": "font/woff2"
 };
@@ -766,8 +768,16 @@ var servidor = http.createServer(function(req, res) {
 
   fs.readFile(archivo, function(err, data) {
     if (err) {
-      res.writeHead(404, {"Content-Type":"text/plain; charset=utf-8"});
-      res.end("404: Ese parche no existe, parce.");
+      var pagina404 = path.join(raiz, "404.html");
+      fs.readFile(pagina404, function(err404, data404) {
+        if (err404) {
+          res.writeHead(404, {"Content-Type":"text/plain; charset=utf-8"});
+          res.end("404: Ese parche no existe, parce.");
+          return;
+        }
+        res.writeHead(404, {"Content-Type":"text/html; charset=utf-8"});
+        res.end(data404);
+      });
       return;
     }
     var ext = path.extname(archivo).slice(1);
