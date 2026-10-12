@@ -8,6 +8,8 @@
   var NICK = (getCookie("nick") || PARAMS.get("nick") || localStorage.getItem("parcheNick") || "").trim().slice(0, 24);
   var SALA = (PARAMS.get("sala") || localStorage.getItem("parcheSala") || "cali").trim();
   var GENERO = (getCookie("genero") || PARAMS.get("genero") || localStorage.getItem("parcheGenero") || "").trim();
+  var RED = (PARAMS.get("chats") || getCookie("chats") || localStorage.getItem("parcheRed") || "chat1").trim() === "chat2" ? "chat2" : "chat1";
+  try { localStorage.setItem("parcheRed", RED); } catch (e) {}
   var MI_AVATAR = localStorage.getItem("parcheAvatar") || "";
   var MI_COLOR = "#007a4d";
   var TOKEN = null;
@@ -823,7 +825,9 @@
 
   // ===== Join =====
   function join() {
-    apiPost("/api/join", {nick:NICK, sala:SALA, avatar:MI_AVATAR, color:MI_COLOR, genero:GENERO}, function(err, res) {
+    var pass = "";
+    try { pass = sessionStorage.getItem("parchePass") || ""; } catch (e) {}
+    apiPost("/api/join", {nick:NICK, sala:SALA, avatar:MI_AVATAR, color:MI_COLOR, genero:GENERO, red:RED, chats:RED, pass:pass}, function(err, res) {
       if (err || !res) {
         anadirMensaje({tipo:"sys", texto:"Error de conexión. Reintentando en 3s..."});
         setTimeout(join, 3000);
@@ -854,13 +858,15 @@
       polling = setInterval(poll, 1000);
       userPolling = setInterval(cargarUsuarios, 2000);
 
-      // Sponsored banner
+      // Sponsored banner (venta directa, 100% para ti)
       if (res.sponsored) {
         var spBanner = $("sponsored-banner");
         var spText = $("sponsored-text");
         spText.textContent = res.sponsored.texto;
         spBanner.style.display = "";
+        try { apiPost("/api/ads/view", {}, function () {}); } catch (e) {}
         spBanner.onclick = function() {
+          try { apiPost("/api/ads/click", {}, function () {}); } catch (e) {}
           if (res.sponsored.link) window.open(res.sponsored.link, "_blank");
         };
       }

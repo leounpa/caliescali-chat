@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ingresar · El Parche de Cali</title>
+<meta name="description" content="Ingresa con tu apodo registrado en El Parche de Cali.">
+<link rel="canonical" href="https://el-parche-de-cali.onrender.com/login.html">
+<meta property="og:title" content="Ingresar · El Parche de Cali">
+<meta property="og:url" content="https://el-parche-de-cali.onrender.com/login.html">
+<link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<main class="contenedor"><section class="section p-3" style="max-width:480px;margin:0 auto">
+<h1 class="title is-3">Ingresar</h1>
+<div class="box">
+<div class="field"><input id="nick" class="input" placeholder="Apodo registrado" maxlength="24"></div>
+<div class="field"><input id="pass" type="password" class="input" placeholder="Contraseña" autocomplete="current-password"></div>
+<div class="field"><button id="btn" class="button has-background-danger-dark has-text-white is-fullwidth">Acceder</button></div>
+<div id="err" style="display:none;color:red;font-weight:700"></div>
+<p class="is-size-7"><a href="registro.html">Crear cuenta</a> · <a href="index.html">Volver</a></p>
+</div></section></main>
+<script>
+document.getElementById("btn").addEventListener("click", function () {
+  var nick = document.getElementById("nick").value.trim();
+  var pass = document.getElementById("pass").value;
+  var err = document.getElementById("err");
+  fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nick: nick, pass: pass }) })
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+      if (res.ok) {
+        try { sessionStorage.setItem("parchePass", pass); localStorage.setItem("parcheNick", res.nick); } catch (e) {}
+        location.href = "chat.html?nick=" + encodeURIComponent(res.nick) + "&sala=cali";
+      } else { err.style.display = "block"; err.textContent = res.error || "Error"; }
+    });
+});
+</script>
+</body>
+</html>

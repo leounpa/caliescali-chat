@@ -212,7 +212,9 @@ function renderStats(d) {
     '<div class="stat-card blue"><div class="value">' + d.totalMensajes + '</div><div class="label">Mensajes totales</div></div>' +
     '<div class="stat-card pink"><div class="value">' + d.totalPrivados + '</div><div class="label">Mensajes privados</div></div>' +
     '<div class="stat-card"><div class="value">' + d.totalArchivos + '</div><div class="label">Archivos enviados</div></div>' +
-    '<div class="stat-card green"><div class="value">' + d.usuariosUnicos + '</div><div class="label">Usuarios únicos</div></div>';
+    '<div class="stat-card green"><div class="value">' + d.usuariosUnicos + '</div><div class="label">Usuarios únicos</div></div>' +
+    '<div class="stat-card"><div class="value">' + (d.adsViews || 0) + '</div><div class="label">Vistas banner</div></div>' +
+    '<div class="stat-card blue"><div class="value">' + (d.adsClicks || 0) + '</div><div class="label">Clics banner</div></div>';
 
   // Users
   var userList = document.getElementById("user-list");

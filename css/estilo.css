@@ -257,6 +257,13 @@ body {
 
 .oculto { display: none; }
 
+/* ===== Anuncios $0 (directos + redes) ===== */
+.ad-slot { display: none; text-align: center; margin: 12px auto; max-width: 100%; }
+.ad-slot-top { min-height: 90px; }
+.ad-label { font-size: .68em; color: #999; letter-spacing: 1px; text-transform: uppercase; }
+.apoya-bar { background: #1a1a2e; color: #fff; text-align: center; padding: 8px 12px; font-size: .85em; }
+.apoya-bar a { color: #ffcf00; font-weight: 700; }
+
 /* ===== Radio ===== */
 .radio-barra {
   display: flex; align-items: center; gap: 8px;

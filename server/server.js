@@ -10,6 +10,8 @@ const PUERTO = process.env.PORT || 3000;
 const PUBLIC = path.join(__dirname, "..");
 const MAX_NICK = 24;
 const MAX_MSG = 500;
+// Regex estilo DaleChat: letras, números y _ . - { } [ ] | (sin espacios ni acentos)
+const NICK_RE = /^[A-Za-z0-9_.\-\{\}\[\]\|]+$/;
 const MAX_ARCHIVO = 6 * 1024 * 1024;
 const MAX_MENSAJES = 15;
 const MEDIA_EXPIRY_MS = 10 * 60 * 1000;
@@ -38,7 +40,7 @@ const SALAS = { cali:"#Cali", salsa:"#Salsa", rumba:"#Rumba", colombia:"#Colombi
 const ADMIN_PASS = "DJLOCO1987";
 let adminToken = null;
 const ARCHIVO_STATS = path.join(__dirname, "stats.json");
-let stats = { totalConexiones:0, totalMensajes:0, totalPrivados:0, totalArchivos:0, usuariosUnicos: new Set(), diario:{}, porHora:{} };
+let stats = { totalConexiones:0, totalMensajes:0, totalPrivados:0, totalArchivos:0, adsViews:0, adsClicks:0, usuariosUnicos: new Set(), diario:{}, porHora:{} };
 
 function cargarStats() {
   try {
@@ -48,17 +50,20 @@ function cargarStats() {
       stats.totalMensajes = data.totalMensajes || 0;
       stats.totalPrivados = data.totalPrivados || 0;
       stats.totalArchivos = data.totalArchivos || 0;
+      stats.adsViews = data.adsViews || 0;
+      stats.adsClicks = data.adsClicks || 0;
       stats.diario = data.diario || {};
       stats.porHora = data.porHora || {};
       stats.usuariosUnicos = new Set(data.usuariosUnicos || []);
     }
-  } catch(e) { stats = { totalConexiones:0, totalMensajes:0, totalPrivados:0, totalArchivos:0, usuariosUnicos:new Set(), diario:{}, porHora:{} }; }
+  } catch(e) { stats = { totalConexiones:0, totalMensajes:0, totalPrivados:0, totalArchivos:0, adsViews:0, adsClicks:0, usuariosUnicos:new Set(), diario:{}, porHora:{} }; }
 }
 function guardarStats() {
   try {
     var out = {
       totalConexiones:stats.totalConexiones, totalMensajes:stats.totalMensajes,
       totalPrivados:stats.totalPrivados, totalArchivos:stats.totalArchivos,
+      adsViews:stats.adsViews||0, adsClicks:stats.adsClicks||0,
       usuariosUnicos:Array.from(stats.usuariosUnicos), diario:stats.diario, porHora:stats.porHora
     };
     fs.writeFileSync(ARCHIVO_STATS, JSON.stringify(out, null, 2));
@@ -118,6 +123,18 @@ Object.keys(SALAS).forEach(k => { mensajes[k] = []; });
 const privados = {};
 const usuarios = {};
 const nickTokens = {};
+
+// ===== Cuentas registradas (estilo DaleChat: nick + pass) =====
+const ARCHIVO_CUENTAS = path.join(__dirname, "cuentas.json");
+let cuentas = {};
+function cargarCuentas() {
+  try { if (fs.existsSync(ARCHIVO_CUENTAS)) cuentas = JSON.parse(fs.readFileSync(ARCHIVO_CUENTAS, "utf8")); } catch(e) { cuentas = {}; }
+}
+function guardarCuentas() { try { fs.writeFileSync(ARCHIVO_CUENTAS, JSON.stringify(cuentas, null, 2)); } catch(e) {} }
+function hashPass(nick, pass) {
+  return crypto.createHash("sha256").update(nick.toLowerCase() + "::" + pass).digest("hex");
+}
+cargarCuentas();
 
 // ===== Moderación =====
 const MOD_ADMIN = (process.env.MOD_ADMIN || "").trim();
@@ -293,6 +310,38 @@ var servidor = http.createServer(function(req, res) {
 
     if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
 
+    // GET /api/health (keep-alive Render)
+    if (ruta === "/api/health" && req.method === "GET") {
+      return jsonRes(res, 200, { ok:true, tiempo:Date.now() });
+    }
+
+    // POST /api/register {nick, pass}
+    if (ruta === "/api/register" && req.method === "POST") {
+      parseBody(req).then(function(b) {
+        var nick = (b.nick || "").trim().slice(0, MAX_NICK);
+        var pass = String(b.pass || "");
+        if (!NICK_RE.test(nick) || nick.length < 2) return jsonRes(res, 400, { error:"Apodo inválido. Usa letras, números y _ . - { } [ ] | (mín. 2)." });
+        if (pass.length < 4) return jsonRes(res, 400, { error:"Contraseña muy corta (mín. 4)." });
+        if (cuentas[nick.toLowerCase()]) return jsonRes(res, 400, { error:"Ese apodo ya está registrado." });
+        cuentas[nick.toLowerCase()] = { nick:nick, hash:hashPass(nick, pass), creado:Date.now() };
+        guardarCuentas();
+        jsonRes(res, 200, { ok:true });
+      }).catch(function() { jsonRes(res, 500, { error:"Error del servidor." }); });
+      return;
+    }
+
+    // POST /api/login {nick, pass}
+    if (ruta === "/api/login" && req.method === "POST") {
+      parseBody(req).then(function(b) {
+        var nick = (b.nick || "").trim().slice(0, MAX_NICK);
+        var pass = String(b.pass || "");
+        var c = cuentas[nick.toLowerCase()];
+        if (!c || c.hash !== hashPass(c.nick, pass)) return jsonRes(res, 403, { error:"Nick o contraseña incorrectos." });
+        jsonRes(res, 200, { ok:true, nick:c.nick });
+      }).catch(function() { jsonRes(res, 500, { error:"Error del servidor." }); });
+      return;
+    }
+
     // POST /api/join
     if (ruta === "/api/join" && req.method === "POST") {
       parseBody(req).then(function(b) {
@@ -301,9 +350,19 @@ var servidor = http.createServer(function(req, res) {
         var avatar = (b.avatar || "🙂").slice(0, 8);
         var color = /^#[0-9a-f]{6}$/i.test(b.color || "") ? b.color : "#007a4d";
         var genero = (b.genero || "").trim();
+        var red = (b.red === "chat2" || b.chats === "chat2") ? "chat2" : "chat1";
+        var pass = String(b.pass || b.wPass || "");
 
-        if (!nick || nick.length < 2) return jsonRes(res, 400, { error:"Apodo inválido (mín. 2 caracteres)." });
+        if (!NICK_RE.test(nick) || nick.length < 2) return jsonRes(res, 400, { error:"Apodo inválido. Usa letras, números y _ . - { } [ ] | (mín. 2)." });
         if (!SALAS[sala]) return jsonRes(res, 400, { error:"Sala inválida." });
+
+        // Cuenta registrada: exige contraseña
+        var cuenta = cuentas[nick.toLowerCase()];
+        if (cuenta) {
+          if (!pass || hashPass(cuenta.nick, pass) !== cuenta.hash) {
+            return jsonRes(res, 403, { error:"Ese apodo está registrado. Marca Registrado e ingresa tu contraseña o usa otro apodo." });
+          }
+        }
 
         var baneo = estaBaneado(nick);
         if (baneo) return jsonRes(res, 403, { error:"Estás expulsado. Vuelve en " + horasRestantes(baneo.hasta) + " hora(s)." });
@@ -321,7 +380,7 @@ var servidor = http.createServer(function(req, res) {
         var pais = getCountryFlag(clientIp);
 
         var token = generarToken();
-        usuarios[token] = { nick:nick, sala:sala, avatar:avatar, color:color, visto:Date.now(), genero:genero, pais:pais };
+        usuarios[token] = { nick:nick, sala:sala, avatar:avatar, color:color, visto:Date.now(), genero:genero, pais:pais, red:red };
         nickTokens[nick] = token;
 
         if (!usuariosPuntos[nick]) {
@@ -358,12 +417,14 @@ var servidor = http.createServer(function(req, res) {
           token:token,
           nick:nick,
           sala:sala,
+          red:red,
           rol:miRol.nombre,
           rolLabel:miRol.label,
           puntos:usuariosPuntos[nick].puntos,
           esMod:esMod(nick),
           genero:genero,
           pais:pais,
+          registrado:!!cuentas[nick.toLowerCase()],
           sponsored:sponsored
         });
       }).catch(function() { jsonRes(res, 500, { error:"Error del servidor." }); });
@@ -500,8 +561,9 @@ var servidor = http.createServer(function(req, res) {
       var since = parseInt(params.since || "0", 10);
       var result = {};
       Object.keys(privados).forEach(function(key) {
-        if (key.indexOf(u.nick) === -1) return;
-        var other = key.replace(u.nick, "").replace("|", "");
+        var partes = key.split("|");
+        if (partes[0] !== u.nick && partes[1] !== u.nick) return;
+        var other = partes[0] === u.nick ? partes[1] : partes[0];
         var msgs = privados[key].filter(function(m) {
           return m.from !== u.nick && m.id > since;
         });
@@ -548,7 +610,7 @@ var servidor = http.createServer(function(req, res) {
         // Change nick
         if (b.nick && typeof b.nick === "string") {
           var newNick = b.nick.trim().slice(0, MAX_NICK);
-          if (newNick.length < 2) return jsonRes(res, 400, { error:"Apodo muy corto (mín. 2 caracteres)." });
+          if (!NICK_RE.test(newNick) || newNick.length < 2) return jsonRes(res, 400, { error:"Apodo inválido. Usa letras, números y _ . - { } [ ] | (mín. 2)." });
           if (newNick === u.nick) return jsonRes(res, 200, { ok:true, changes:changes });
           if (nickTokens[newNick] && nickTokens[newNick] !== token) return jsonRes(res, 400, { error:"Ese apodo ya está en uso." });
           var oldNick = u.nick;
@@ -608,6 +670,14 @@ var servidor = http.createServer(function(req, res) {
       return;
     }
 
+    // POST /api/ads/view|click — conteo gratis del banner directo
+    if ((ruta === "/api/ads/view" || ruta === "/api/ads/click") && req.method === "POST") {
+      if (ruta === "/api/ads/view") stats.adsViews = (stats.adsViews || 0) + 1;
+      else stats.adsClicks = (stats.adsClicks || 0) + 1;
+      if ((stats.adsViews + stats.adsClicks) % 5 === 0) guardarStats();
+      return jsonRes(res, 200, { ok:true });
+    }
+
     // POST /api/admin/login
     if (ruta === "/api/admin/login" && req.method === "POST") {
       parseBody(req).then(function(b) {
@@ -635,6 +705,8 @@ var servidor = http.createServer(function(req, res) {
         totalMensajes: stats.totalMensajes,
         totalPrivados: stats.totalPrivados,
         totalArchivos: stats.totalArchivos,
+        adsViews: stats.adsViews || 0,
+        adsClicks: stats.adsClicks || 0,
         usuariosUnicos: stats.usuariosUnicos.size || (stats.usuariosUnicos.length || 0),
         conectados: usuariosActivos.length,
         usuarios: usuariosActivos,
@@ -728,29 +800,35 @@ var servidor = http.createServer(function(req, res) {
       var nick = (params.nick || "").trim().slice(0, MAX_NICK);
       var genero = params.genero || "No especificar";
       var rememberMe = params.remember_me === "on" || params.remember_me === "true";
+      var chats = params.chats === "chat2" ? "chat2" : "chat1";
+      var wPass = params.wPass === "true" || params.wPass === "on" || params.registered === "on";
       var sala = "cali";
-      if (params.idNC === "salsa") sala = "salsa";
-      else if (params.idNC === "rumba") sala = "rumba";
-      else if (params.idNC === "colombia") sala = "colombia";
-      else if (params.idNC === "general") sala = "general";
-      else if (params.idNC === "amistad") sala = "amistad";
+      var idNC = String(params.idNC || "cali").toLowerCase();
+      if (SALAS[idNC]) sala = idNC;
 
-      if (!nick || nick.length < 2) {
+      if (!NICK_RE.test(nick) || nick.length < 2) {
         res.writeHead(302, { "Location": "/index.html?error=nick" });
         res.end();
         return;
       }
 
       var cookies = [];
+      var seg = "; Path=/; Max-Age=31536000; SameSite=Lax; Secure";
       if (rememberMe) {
-        cookies.push("nick=" + encodeURIComponent(nick) + "; Path=/; Max-Age=31536000; SameSite=Lax");
-        cookies.push("genero=" + encodeURIComponent(genero) + "; Path=/; Max-Age=31536000; SameSite=Lax");
+        cookies.push("nick=" + encodeURIComponent(nick) + seg);
+        cookies.push("genero=" + encodeURIComponent(genero) + seg);
+        cookies.push("chats=" + encodeURIComponent(chats) + seg);
+        cookies.push("wPass=" + encodeURIComponent(wPass ? "true" : "") + seg);
+        cookies.push("idNC=" + encodeURIComponent(idNC) + seg);
       } else {
-        cookies.push("nick=; Path=/; Max-Age=0");
-        cookies.push("genero=; Path=/; Max-Age=0");
+        cookies.push("nick=; Path=/; Max-Age=0; SameSite=Lax");
+        cookies.push("genero=; Path=/; Max-Age=0; SameSite=Lax");
+        cookies.push("chats=; Path=/; Max-Age=0; SameSite=Lax");
+        cookies.push("wPass=; Path=/; Max-Age=0; SameSite=Lax");
+        cookies.push("idNC=; Path=/; Max-Age=0; SameSite=Lax");
       }
 
-      var redirectUrl = "/chat.html?nick=" + encodeURIComponent(nick) + "&sala=" + encodeURIComponent(sala) + "&genero=" + encodeURIComponent(genero);
+      var redirectUrl = "/chat.html?nick=" + encodeURIComponent(nick) + "&sala=" + encodeURIComponent(sala) + "&genero=" + encodeURIComponent(genero) + "&chats=" + encodeURIComponent(chats);
       res.writeHead(302, {
         "Location": redirectUrl,
         "Set-Cookie": cookies

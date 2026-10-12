@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro · El Parche de Cali</title>
+<meta name="description" content="Registra tu apodo gratis en El Parche de Cali y protégelo con contraseña.">
+<link rel="canonical" href="https://el-parche-de-cali.onrender.com/registro.html">
+<meta property="og:title" content="Registro · El Parche de Cali">
+<meta property="og:url" content="https://el-parche-de-cali.onrender.com/registro.html">
+<link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<main class="contenedor"><section class="section p-3" style="max-width:480px;margin:0 auto">
+<h1 class="title is-3">Registro gratis</h1>
+<div class="box">
+<div class="field"><input id="nick" class="input" placeholder="Elige tu apodo" maxlength="24"></div>
+<div class="field"><input id="pass" type="password" class="input" placeholder="Contraseña (mín. 4)" autocomplete="new-password"></div>
+<div class="field"><button id="btn" class="button has-background-danger-dark has-text-white is-fullwidth">Registrarme</button></div>
+<div id="err" style="display:none;color:red;font-weight:700"></div>
+<div id="ok" style="display:none;color:green;font-weight:700"></div>
+<p class="is-size-7">Solo letras, números y _ . - { } [ ] | · <a href="login.html">Ya tengo cuenta</a> · <a href="index.html">Volver</a></p>
+</div></section></main>
+<script>
+document.getElementById("btn").addEventListener("click", function () {
+  var nick = document.getElementById("nick").value.trim();
+  var pass = document.getElementById("pass").value;
+  var err = document.getElementById("err"), ok = document.getElementById("ok");
+  err.style.display = "none"; ok.style.display = "none";
+  if (!/^[A-Za-z0-9_.\-\{\}\[\]\|]+$/.test(nick) || nick.length < 2) { err.style.display = "block"; err.textContent = "Apodo inválido."; return; }
+  fetch("/api/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nick: nick, pass: pass }) })
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+      if (res.ok) {
+        ok.style.display = "block"; ok.textContent = "Cuenta creada. Ahora ingresa.";
+        try { sessionStorage.setItem("parchePass", pass); } catch (e) {}
+        setTimeout(function () { location.href = "login.html"; }, 1200);
+      } else { err.style.display = "block"; err.textContent = res.error || "Error"; }
+    });
+});
+</script>
+</body>
+</html>

@@ -3,3 +3,6 @@ npm-debug.log*
 .DS_Store
 public/config.js
 server/roles.json
+server/stats.json
+server/cuentas.json
+server/sponsored.json

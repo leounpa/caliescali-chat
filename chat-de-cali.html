@@ -12,11 +12,13 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://el-parche-de-cali.onrender.com/chat-de-cali.html">
 <meta property="og:image" content="https://el-parche-de-cali.onrender.com/img/logo.svg">
+<link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/estilo.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Chat de Cali · El Parche de Cali","url":"https://el-parche-de-cali.onrender.com/chat-de-cali.html"}</script>
 </head>
 <body>
 <div class="bandera-top">
@@ -44,6 +46,7 @@
 </nav>
 
 <main class="contenedor">
+  <div class="ad-slot ad-slot-top" data-aads><span class="ad-label">Publicidad</span></div>
   <section class="section p-3">
     <h1 class="title is-3"><i class="fas fa-city"></i> Chat de Cali</h1>
     <p>Bienvenido al <strong>Chat de Cali</strong>, el parche principal de los caleños y caleñas. Aquí se habla de todo: la Feria de Cali, el Pascual, el barrio, la salsa y la vida en la sucursal del cielo. Entra gratis, sin registro, solo con tu apodo.</p>
@@ -66,9 +69,17 @@
           </select>
         </div>
       </div>
+            <div class="field">
+        Chat:
+        <div class="select is-small">
+          <select name="chats">
+            <option selected value="chat1">Principal</option>
+            <option value="chat2">Alternativo</option>
+          </select>
+        </div>
+      </div>
       <input type="hidden" name="idNC" value="cali">
       <input type="hidden" name="isHot" value="no">
-      <input type="hidden" name="chats" value="chat1">
       <input type="hidden" name="autoConnect" value="true">
       <div class="field">
         <button class="button has-background-danger-dark has-text-white is-fullwidth">Entrar al Chat de Cali</button>
@@ -124,5 +135,7 @@
   if (anio) anio.textContent = new Date().getFullYear();
 })();
 </script>
+<script src="js/ads-config.js"></script>
+<script src="js/ads.js"></script>
 </body>
 </html>

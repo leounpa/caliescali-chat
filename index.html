@@ -18,7 +18,12 @@
 <meta name="twitter:description" content="Chatea gratis en El Parche de Cali, conoce gente, haz amigos.">
 <meta name="twitter:image" content="https://el-parche-de-cali.onrender.com/img/logo.svg">
 <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+<link rel="canonical" href="https://el-parche-de-cali.onrender.com/">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#363636"/>
+<meta property="og:image:type" content="image/svg+xml">
+<meta property="og:locale" content="es_CO">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","@id":"https://el-parche-de-cali.onrender.com/#website","name":"El Parche de Cali","url":"https://el-parche-de-cali.onrender.com/"},{"@context":"https://schema.org","@type":"Organization","@id":"https://el-parche-de-cali.onrender.com/#organization","name":"El Parche de Cali","url":"https://el-parche-de-cali.onrender.com/","logo":"https://el-parche-de-cali.onrender.com/img/logo.svg"},{"@context":"https://schema.org","@type":"WebPage","@id":"https://el-parche-de-cali.onrender.com/#webpage","name":"El Parche de Cali - Chat online, gratis y sin registro","url":"https://el-parche-de-cali.onrender.com/"}]</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="css/estilo.css">
@@ -52,6 +57,7 @@
     <a class="cali-nav" href="#entrada">Ingresar</a>
   </div>
 </div>
+<div class="apoya-bar">Gratis gracias a anunciantes · <a href="anuncia.html">Anuncia desde $5.000</a> · <a href="apoyar.html">Apoyar</a></div>
 
 <section class="hero is-small" itemscope itemtype="http://schema.org/WPHeader">
   <div class="hero-body">
@@ -81,10 +87,23 @@
                   <option selected>No especificar</option>
                 </select>
               </div>
+              Chat:
+              <div class="select is-small">
+                <select id="chat-select" name="chats">
+                  <option selected value="chat1">Principal</option>
+                  <option value="chat2">Alternativo</option>
+                </select>
+              </div>
               <input name="registered" id="registered" type="checkbox">
               <label for="registered" class="mr-2">Registrado</label>
               <input name="remember_me" id="remember_me" type="checkbox">
               <label for="remember_me">Recordarme</label>
+            </div>
+            <div class="field" id="pass_field" style="display:none">
+              <div class="control">
+                <input id="pass" name="pass" type="password" placeholder="Contraseña (solo registrados)" class="input" autocomplete="current-password">
+              </div>
+              <p class="help">¿No tienes cuenta? <a href="registro.html">Regístrate gratis</a> · <a href="login.html">Ingresar</a></p>
             </div>
             <div class="field" id="tnc_field">
               <input name="tnc" id="tnc" checked="checked" type="checkbox">
@@ -108,6 +127,7 @@
 
 <section class="section p-3" id="salas">
   <div class="container is-centered">
+    <div class="ad-slot ad-slot-top" data-aads><span class="ad-label">Publicidad</span></div>
     <h2 class="title is-3">Salas de chat más visitadas</h2>
     <div class="content">
       <nav class="bd-links" itemscope itemtype="http://schema.org/SiteNavigationElement">
@@ -210,6 +230,8 @@
         <a href="salas.html">Salas de chat</a>
         <a href="anuncia.html">Anuncia aquí</a>
         <a href="faq.html">Preguntas frecuentes</a>
+        <a href="ayuda.html">Ayuda</a>
+        <a href="chat-para-tu-web.html">Chat para tu web</a>
       </nav>
       <nav class="footer-links" aria-label="Seguridad y comunidad">
         <h2>Seguridad y comunidad</h2>
@@ -218,10 +240,13 @@
       </nav>
       <nav class="footer-links" aria-label="Legal">
         <h2>Contacto</h2>
+        <a href="contacto.html">Contacto</a>
         <a href="https://wa.me/573104311704">WhatsApp: 310 431 1704</a>
         <a href="terminos-y-condiciones.html">Términos y condiciones</a>
         <a href="politicas-de-privacidad.html">Políticas de privacidad</a>
         <a href="politicas-de-cookies.html">Política de cookies</a>
+        <a href="login.html">Ingresar</a>
+        <a href="registro.html">Registro</a>
       </nav>
     </div>
     <div class="footer-bottom">
@@ -237,7 +262,7 @@
 
 <div id="cookie-banner" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#1a1a2e;color:#fff;padding:14px 18px;box-shadow:0 -2px 10px rgba(0,0,0,.35)">
   <div style="max-width:950px;margin:0 auto;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-    <p style="flex:1;min-width:220px;margin:0;font-size:.9em">Usamos cookies funcionales para recordar tu apodo y tu elección aquí. Sin rastreo publicitario. Ver <a href="politicas-de-cookies.html" style="color:#ffcf00">Política de Cookies</a>.</p>
+    <p style="flex:1;min-width:220px;margin:0;font-size:.9em">Usamos cookies funcionales para recordar tu apodo. Si aceptas, las redes de anuncios (Monetag/Adsterra/A-Ads) pueden usar cookies propias. Ver <a href="politicas-de-cookies.html" style="color:#ffcf00">Política de Cookies</a>.</p>
     <button id="cookie-aceptar" class="button is-small" style="background:#007a4d;color:#fff;border:none">Aceptar</button>
     <button id="cookie-rechazar" class="button is-small is-light">Rechazar</button>
   </div>
@@ -262,8 +287,8 @@
   } catch (e) {}
 })();
 </script>
-<script>
-function setCookie(e,t,n){var i=new Date;i.setTime(i.getTime()+24*n*60*60*1e3);var o="expires="+i.toUTCString();document.cookie=e+"="+t+";"+o+";path=/;SameSite=Lax"}function getCookie(e){for(var t=e+"=",n=document.cookie.split(";"),i=0;i<n.length;i++){for(var o=n[i];" "==o.charAt(0);)o=o.substring(1);if(0==o.indexOf(t))return o.substring(t.length,o.length)}return""}function handleForm(){var e=document.getElementById("nick").value.trim(),t=document.getElementById("genero").value,n=document.getElementById("form-error"),r=document.getElementById("chat-form"),o=document.getElementById("tnc").checked;if(void 0===e||0===e.length)return n.style.display="block",n.innerHTML="Ingrese su apodo",!1;if(!/^[A-Za-z0-9_.\-áéíóúüñÁÉÍÓÚÜÑ]+$/.test(e))return n.style.display="block",n.innerHTML="El apodo contiene caracteres no permitidos.",!1;if(!o)return n.style.display="block",n.innerHTML="Por favor, acepte nuestros terminos y politicas.",!1;localStorage.setItem("parcheGenero",t);var d=document.getElementById("remember_me").checked;if(d){setCookie("nick",e,1e3);setCookie("genero",t,1e3)}else{setCookie("nick","",0);setCookie("genero","",0)}var a="";"Hombre"==t&&(a="img/avatar-hombre.png"),"Mujer"==t&&(a="img/avatar-mujer.png");var c=document.createElement("input");c.name="icon";c.type="hidden";c.value=a;r.appendChild(c)}document.addEventListener("DOMContentLoaded",function(){var e=document.getElementById("navTouch");e&&e.addEventListener("click",function(){var t=e.getAttribute("data-target"),n=document.getElementById(t);e.classList.toggle("is-active"),n.classList.toggle("is-active")});var t=getCookie("nick"),n=getCookie("genero");document.getElementById("chat-form").onsubmit=handleForm;void 0!==t&&t.length>0&&(document.getElementById("nick").value=t,document.getElementById("remember_me").checked=!0);void 0!==n&&n.length>0&&(document.getElementById("genero").value=n);document.querySelectorAll(".bd-link").forEach(function(a){a.addEventListener("click",function(){var s=a.getAttribute("data-idnc");if(s){document.getElementById("idNC").value=s;var sala=a.getAttribute("data-sala");if(sala)document.getElementById("chats-hidden").value=sala}})})});
-</script>
+<script src="js/entrada.js"></script>
+<script src="js/ads-config.js"></script>
+<script src="js/ads.js"></script>
 </body>
 </html>

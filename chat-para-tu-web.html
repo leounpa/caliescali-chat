@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat para tu web · El Parche de Cali</title>
+<meta name="description" content="Incrusta el chat de El Parche de Cali en tu web o blog con un iframe.">
+<link rel="canonical" href="https://el-parche-de-cali.onrender.com/chat-para-tu-web.html">
+<link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<main class="contenedor"><section class="section p-3">
+<h1 class="title is-3">Chat para tu web</h1>
+<div class="box">
+<div class="field"><label class="label">Sala</label><div class="select"><select id="sala"><option value="cali">#Cali</option><option value="salsa">#Salsa</option><option value="rumba">#Rumba</option><option value="colombia">#Colombia</option><option value="general">#General</option><option value="amistad">#Amistad</option></select></div></div>
+<div class="field"><label class="label">Ancho x Alto</label><input id="wh" class="input" value="350x500"></div>
+<div class="field"><button id="gen" class="button is-link">Generar código</button></div>
+<div class="field"><textarea id="out" class="textarea" rows="4" readonly></textarea></div>
+<p class="is-size-7">Chat ofrecido por <a href="index.html">El Parche de Cali</a></p>
+</div></section></main>
+<script>
+document.getElementById("gen").addEventListener("click", function () {
+  var sala = document.getElementById("sala").value;
+  var wh = (document.getElementById("wh").value || "350x500").split("x");
+  var w = parseInt(wh[0], 10) || 350, h = parseInt(wh[1], 10) || 500;
+  document.getElementById("out").value = '<iframe src="https://el-parche-de-cali.onrender.com/chat.html?sala=' + sala + '" width="' + w + '" height="' + h + '" frameborder="0" title="El Parche de Cali"></iframe>';
+});
+document.getElementById("gen").click();
+</script>
+</body>
+</html>

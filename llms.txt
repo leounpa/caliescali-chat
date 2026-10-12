@@ -1,0 +1,18 @@
+# El Parche de Cali
+> Chat gratis y sin registro para Cali y Colombia.
+
+## Salas
+- Chat de Cali: chat-de-cali.html (#Cali)
+- Chat de Salsa: chat-de-salsa.html
+- Chat de Rumba: chat-de-rumba.html
+- Chat de Colombia: chat-de-colombia.html
+- Chat General: chat-general.html
+- Chat de Amistad: chat-de-amistad.html
+
+## Entrada
+- Formulario en index.html: nick + genero + red (chat1 Principal / chat2 Alternativo) + registrado/pass
+- POST /webchat -> 302 a chat.html?nick=&sala=&genero=&chats=
+- API: POST /api/register, POST /api/login, POST /api/join, GET /api/messages, POST /api/messages, priv, users, settings, switch, leave, admin
+
+## Reglas
+- Sin lenguaje vulgar, sin spam, sin datos personales en sala pública.
